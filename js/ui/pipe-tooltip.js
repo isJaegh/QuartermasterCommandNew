@@ -8,6 +8,7 @@ import { state } from '../state/store.js';
 import { i18n } from '../data/lang.js';
 import { getItemName } from '../utils/format.js';
 import { EXTRACTION_ROUTES } from '../data/data.js';
+import { openBottomSheet } from './bottom-sheet.js';
 
 export function initPipeTooltip() {
     let tip = document.getElementById('pipeTip');
@@ -72,7 +73,7 @@ export function initPipeTooltip() {
     });
 }
 
-function buildPipeTipHTML(step) {
+export function buildPipeTipHTML(step) {
     const routes = step.routeStats || [];
     if (routes.length === 0) return '';
 
@@ -148,4 +149,16 @@ function buildPipeTipHTML(step) {
     });
 
     return html;
+}
+
+// ─── Mobile: open bottom sheet for a step's route comparison ─────────────────
+
+export function showPipeCompare(stepKey) {
+    const steps = state.pipelineStepsRaw;
+    if (!steps) return;
+    const step = steps.find(s => s.stepKey === stepKey);
+    if (!step) return;
+    const html = buildPipeTipHTML(step);
+    if (!html) return;
+    openBottomSheet({ title: 'Route Comparison', html });
 }

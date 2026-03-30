@@ -439,7 +439,9 @@ function renderPipeline({ t, mode, crafters, showBp }) {
 
                 return `<button class="${classes.join(' ')}" data-action="changeRoute" data-step="${safeStepKey}" data-route="${safeRouteName}"><span>${rs.name}</span>${badgeHtml}</button>`;
             }).join('');
-            routeHtml = `<div class="route-choices">${btns}</div>`;
+            const safeStepKey = stepObj.stepKey.replace(/'/g, "\\'");
+            const compareBtn = `<button class="btn-mini btn-compare touch-only" data-action="compareRoutes" data-step="${safeStepKey}" title="Compare all routes">\u2696 Compare</button>`;
+            routeHtml = `<div class="route-choices">${btns}${compareBtn}</div>`;
         }
 
         const sep = `<hr style="border:none; border-top: 1px dashed var(--border); margin: 6px 0;">`;

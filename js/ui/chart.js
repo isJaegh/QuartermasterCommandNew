@@ -7,6 +7,7 @@ import { i18n } from '../data/lang.js';
 import { getItemName } from '../utils/format.js';
 import { openModal } from './modals.js';
 import { EXTRACTION_ROUTES } from '../data/data.js';
+import { openBottomSheet } from './bottom-sheet.js';
 
 const NODE_W  = 170;
 const NODE_H  = 58;
@@ -322,7 +323,7 @@ function buildTooltipData(step, t, mE, mM) {
     return { title: sourceName, rows };
 }
 
-function renderTooltipHTML(data) {
+export function renderTooltipHTML(data) {
     if (!data || !data.rows || !data.rows.length) return '';
 
     let html = `<div class="chart-tip-title">${data.title} \u2014 Route Comparison</div>`;
@@ -562,10 +563,11 @@ function renderSVG(container, nodes, edges) {
             text.textContent = labelText;
             g.appendChild(text);
 
-            // Invisible wider hover target over the label area
+            // Invisible wider hover/tap target over the label area
             if (edge.tooltipData) {
-                const hitW = Math.max(approxW + 20, 60);
-                const hitH = 24;
+                const isTouch = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+                const hitW = Math.max(approxW + 20, isTouch ? 80 : 60);
+                const hitH = isTouch ? 44 : 24;
                 const hit = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
                 hit.setAttribute('x', midX - hitW / 2);
                 hit.setAttribute('y', midY - hitH / 2);
@@ -573,9 +575,10 @@ function renderSVG(container, nodes, edges) {
                 hit.setAttribute('height', hitH);
                 hit.setAttribute('rx', '3');
                 hit.style.fill = 'transparent';
-                hit.style.cursor = 'help';
+                hit.style.cursor = isTouch ? 'pointer' : 'help';
                 hit.dataset.tooltipJson = JSON.stringify(edge.tooltipData);
                 hit.classList.add('chart-tip-trigger');
+                if (isTouch) hit.classList.add('chart-tip-trigger-touch');
                 g.appendChild(hit);
             }
         }
@@ -741,6 +744,17 @@ function attachTooltip(container, svg) {
         hideTip();
     });
 
+    // Touch / click: tap a chart edge label → bottom sheet
+    // Also works as a desktop click fallback (hover tooltip is hidden first)
+    svg.addEventListener('click', (e) => {
+        const trigger = e.target.closest('.chart-tip-trigger');
+        if (!trigger) return;
+        const data = JSON.parse(trigger.dataset.tooltipJson || 'null');
+        if (!data) return;
+        tip.style.display = 'none'; // dismiss hover tooltip if open
+        openBottomSheet({ title: data.title || 'Route Comparison', html: renderTooltipHTML(data) });
+    });
+
     // Hide when the modal closes
     const modal = document.getElementById('chartModal');
     if (modal) {
@@ -766,7 +780,7 @@ function attachZoomPan(svg, viewport) {
     _zoom.tx = 0;
     _zoom.ty = 0;
 
-    // Scroll-wheel zoom
+    // Scroll-wheel zoom (desktop)
     svg.addEventListener('wheel', (e) => {
         e.preventDefault();
         const rect = svg.getBoundingClientRect();
@@ -776,36 +790,60 @@ function attachZoomPan(svg, viewport) {
         const delta = e.deltaY > 0 ? 0.9 : 1.1;
         const newScale = Math.min(4, Math.max(0.15, _zoom.scale * delta));
 
-        // Zoom toward mouse position
         _zoom.tx = mouseX - (mouseX - _zoom.tx) * (newScale / _zoom.scale);
         _zoom.ty = mouseY - (mouseY - _zoom.ty) * (newScale / _zoom.scale);
         _zoom.scale = newScale;
         applyTransform(viewport);
     }, { passive: false });
 
-    // Mouse drag pan
-    let dragging = false;
-    let lastX = 0;
-    let lastY = 0;
+    // Multi-pointer tracking: supports both 1-finger pan and 2-finger pinch-zoom
+    const activePointers = new Map(); // pointerId → { x, y }
+    let lastPinchDist = 0;
+
+    function pinchDist(map) {
+        const [a, b] = [...map.values()];
+        return Math.hypot(b.x - a.x, b.y - a.y);
+    }
 
     svg.addEventListener('pointerdown', (e) => {
         if (e.button !== undefined && e.button !== 0) return;
-        dragging = true;
-        lastX = e.clientX;
-        lastY = e.clientY;
+        activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
         svg.setPointerCapture(e.pointerId);
+        // Seed pinch distance when the second finger touches down
+        if (activePointers.size === 2) lastPinchDist = pinchDist(activePointers);
         e.preventDefault();
     });
 
     svg.addEventListener('pointermove', (e) => {
-        if (!dragging) return;
-        _zoom.tx += e.clientX - lastX;
-        _zoom.ty += e.clientY - lastY;
-        lastX = e.clientX;
-        lastY = e.clientY;
-        applyTransform(viewport);
+        if (!activePointers.has(e.pointerId)) return;
+        const prev = activePointers.get(e.pointerId);
+        const curr = { x: e.clientX, y: e.clientY };
+        activePointers.set(e.pointerId, curr);
+
+        if (activePointers.size === 1) {
+            // Single pointer: pan
+            _zoom.tx += curr.x - prev.x;
+            _zoom.ty += curr.y - prev.y;
+            applyTransform(viewport);
+        } else if (activePointers.size >= 2) {
+            // Two pointers: pinch-zoom toward midpoint
+            const newDist = pinchDist(activePointers);
+            if (lastPinchDist > 0) {
+                const scaleFactor = newDist / lastPinchDist;
+                const pts  = [...activePointers.values()];
+                const rect = svg.getBoundingClientRect();
+                const midX = (pts[0].x + pts[1].x) / 2 - rect.left;
+                const midY = (pts[0].y + pts[1].y) / 2 - rect.top;
+                const newScale = Math.min(4, Math.max(0.15, _zoom.scale * scaleFactor));
+                _zoom.tx = midX - (midX - _zoom.tx) * (newScale / _zoom.scale);
+                _zoom.ty = midY - (midY - _zoom.ty) * (newScale / _zoom.scale);
+                _zoom.scale = newScale;
+                applyTransform(viewport);
+            }
+            lastPinchDist = newDist;
+        }
     });
 
-    svg.addEventListener('pointerup', () => { dragging = false; });
-    svg.addEventListener('pointercancel', () => { dragging = false; });
+    svg.addEventListener('pointerup',     (e) => { activePointers.delete(e.pointerId); lastPinchDist = 0; });
+    svg.addEventListener('pointercancel', (e) => { activePointers.delete(e.pointerId); lastPinchDist = 0; });
 }

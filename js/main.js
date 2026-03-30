@@ -13,7 +13,8 @@ import { initMarketData, renderMarketTable, autoFillCart, clearCart, updateVisib
 import { initUnifiedSearch, isLookupMode, refreshLookup } from './ui/lookup.js';
 import { setLang } from './data/lang.js';
 import { openChartModal } from './ui/chart.js';
-import { initPipeTooltip } from './ui/pipe-tooltip.js';
+import { initPipeTooltip, showPipeCompare } from './ui/pipe-tooltip.js';
+import { closeSheet } from './ui/bottom-sheet.js';
 
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -136,9 +137,17 @@ document.addEventListener('DOMContentLoaded', () => {
             return; // Stops the click from bubbling up to the step card!
         }
 
+        // 3b. Mobile "Compare" button — opens bottom sheet with full route comparison
+        if (target.closest('[data-action="compareRoutes"]')) {
+            const btn = target.closest('[data-action="compareRoutes"]');
+            showPipeCompare(btn.dataset.step);
+            return;
+        }
+
         // 4. Handle pipeline tool route choice (Machine Selection)
         if (target.closest('[data-action="changeRoute"]')) {
             const btn = target.closest('[data-action="changeRoute"]');
+            closeSheet(); // close compare sheet if open
             updatePathChoice(null, btn.dataset.step, btn.dataset.route);
             return; // Stops the click from bubbling up!
         }
