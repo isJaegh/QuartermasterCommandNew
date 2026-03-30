@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://discord.com; script-src 'self'; style-src 'self' 'unsafe-inline';">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Quartermaster Command - MO2 Crafting Suite</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f0f12">
+</head>
+<body>
+
+    <div class="app-header">
+        <div class="header-titles">
+            <h1 class="app-title">Quartermaster Command</h1>
+            <div class="app-subtitle">CRAFTING SUITE • MADE BY [MTM] JAEGH</div>
+        </div>
+        <button class="header-menu-btn" id="btnToggleSidebar">☰</button>
+    </div>
+
+    <div id="sidebarOverlay" class="sidebar-overlay"></div>
+    <div id="sidebar" class="sidebar">
+        <span class="close-sidebar" id="btnCloseSidebar">&times;</span>
+        <div class="sidebar-links">
+            <button class="btn-sidebar" data-action="openModal" data-modal="bankModal"><span id="ui_btnBank">Inventory</span></button>
+            <button class="btn-sidebar" data-action="openModal" data-modal="cartModal"><span id="ui_btnCart">Cart</span></button>
+            <button class="btn-sidebar" data-action="openModal" data-modal="settingsModal"><span id="ui_btnSettings">Settings</span></button>
+            <button class="btn-sidebar" data-action="openModal" data-modal="helpModal"><span id="ui_btnHelp">Help</span></button>
+        </div>
+        <div class="sidebar-footer">
+            <div class="theme-switch-wrapper">
+                <span class="theme-label">DM</span>
+                <label class="theme-switch">
+                    <input type="checkbox" id="themeToggleCb">
+                    <span class="slider"></span>
+                </label>
+                <span class="theme-label">LM</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="bankModal" class="modal"></div>
+    <template id="tpl_bankModal">
+        <div class="modal-content module" style="padding: 0; max-width: 550px;">
+            <div class="modal-header-sticky">
+                <h3 style="margin:0; color:var(--accent);" id="ui_invBankTitle">Inventory</h3>
+                <span class="close" data-close="bankModal">&times;</span>
+            </div>
+            <div class="modal-body-scroll">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <div style="display:flex; gap:5px;">
+                        <button class="btn-mini btn-accent tooltip-maxcraft" id="ui_btnMaxText">Calculate Max Craftable</button>
+                    </div>
+                    <div class="switch-row" style="margin-bottom: 0; padding: 0; border: none; background: transparent;">
+                        <div class="switch-label" style="margin-right: 8px;"><span id="ui_showAllBank">Show All Materials</span></div>
+                        <label class="theme-switch"><input type="checkbox" id="showAllBank"><span class="slider"></span></label>
+                    </div>
+                </div>
+                <div class="search-wrap">
+                    <input type="text" id="searchBank" class="search-input" placeholder="Search...">
+                    <button class="search-clear" data-action="clearSearch" data-target="searchBank" title="Clear search">&times;</button>
+                </div>
+                <div id="bankContainer"></div>
+            </div>
+            <div style="padding: 15px; border-top: 1px solid var(--border); text-align: right; background: var(--bg-card);">
+                <button class="btn-dispatch" id="ui_ackBank" data-close="bankModal" style="width: auto; display: inline-block; padding: 8px 16px;">Acknowledge</button>
+            </div>
+        </div>
+    </template>
+
+    <div id="cartModal" class="modal"></div>
+    <template id="tpl_cartModal">
+        <div class="modal-content module" style="padding: 0; max-width: 700px;">
+            <div class="modal-header-sticky">
+                <h3 style="margin:0; color:var(--accent);" id="ui_marketCartTitle">Market Cart</h3>
+                <span class="close" data-close="cartModal">&times;</span>
+            </div>
+            <div class="modal-body-scroll">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <div style="display:flex; gap:5px;">
+                        <button class="btn-mini btn-success" id="ui_btnAutoFill">Auto-Fill</button>
+                        <button class="btn-mini btn-danger" id="ui_btnClearCart">Clear</button>
+                    </div>
+                    <div class="switch-row" style="margin-bottom: 0; padding: 0; border: none; background: transparent;">
+                        <div class="switch-label" style="margin-right: 8px;"><span id="ui_showAllCart">Show All Materials</span></div>
+                        <label class="theme-switch"><input type="checkbox" id="showAllCart"><span class="slider"></span></label>
+                    </div>
+                </div>
+                <div class="search-wrap">
+                    <input type="text" id="searchCart" class="search-input" placeholder="Search...">
+                    <button class="search-clear" data-action="clearSearch" data-target="searchCart" title="Clear search">&times;</button>
+                </div>
+                <div id="marketContainer"></div>
+            </div>
+            <div style="padding: 15px; border-top: 1px solid var(--border); text-align: right; background: var(--bg-card);">
+                <button class="btn-dispatch" id="ui_ackCart" data-close="cartModal" style="width: auto; display: inline-block; padding: 8px 16px;">Acknowledge</button>
+            </div>
+        </div>
+    </template>
+
+    <div id="maxCraftModal" class="modal"></div>
+    <template id="tpl_maxCraftModal">
+        <div class="modal-content module" style="padding: 0; max-width: 500px;">
+            <div class="modal-header-sticky">
+                <h3 style="margin:0; color:var(--accent);" id="ui_maxTitle">Crafting Limit Reached</h3>
+                <span class="close" data-close="maxCraftModal">&times;</span>
+            </div>
+            <div class="modal-body-scroll" id="maxCraftBody"></div>
+            <div style="padding: 15px; border-top: 1px solid var(--border); text-align: right; background: var(--bg-card);">
+                <button class="btn-dispatch" id="ui_maxAcknowledge" data-close="maxCraftModal" style="width: auto; display: inline-block; padding: 8px 16px;">Acknowledge</button>
+            </div>
+        </div>
+    </template>
+
+    <div id="prefsModal" class="modal"></div>
+    <template id="tpl_prefsModal">
+        <div class="modal-content module" style="padding: 0; max-width: 400px;">
+            <div class="modal-header-sticky">
+                <h3 style="margin:0; color:var(--accent);" id="ui_yieldModsModal">Preferences</h3>
+                <span class="close" data-close="prefsModal">&times;</span>
+            </div>
+            <div class="modal-body-scroll">
+                <div style="display: flex; flex-direction: column; gap: 15px;">
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <div style="font-size: 10px; font-weight: bold; text-transform: uppercase; color: var(--accent); letter-spacing: 0.08em; margin-bottom: 2px;" id="ui_prefCatModifiers">Yield Modifiers</div>
+                        <div class="switch-row">
+                            <div class="switch-label"><span id="ui_mastery">Mastery (+6%)</span></div>
+                            <label class="theme-switch"><input type="checkbox" id="modMast" checked><span class="slider"></span></label>
+                        </div>
+                        <div class="switch-row">
+                            <div class="switch-label"><span id="ui_refining">Refining (+3%)</span></div>
+                            <label class="theme-switch"><input type="checkbox" id="modRef" checked><span class="slider"></span></label>
+                        </div>
+                        <div class="switch-row">
+                            <div class="switch-label"><span id="ui_extraction">Extraction (+3%)</span></div>
+                            <label class="theme-switch"><input type="checkbox" id="modExt" checked><span class="slider"></span></label>
+                        </div>
+                    </div>
+
+                    <div style="border-top: 1px dashed var(--border); padding-top: 15px; display: flex; flex-direction: column; gap: 8px;">
+                        <div style="font-size: 10px; font-weight: bold; text-transform: uppercase; color: var(--accent); letter-spacing: 0.08em; margin-bottom: 2px;" id="ui_prefCatRoute">Route &amp; Display</div>
+                        <div class="switch-row" id="row_chkBp">
+                            <div class="switch-label"><span id="ui_chkBp">Show byproducts</span></div>
+                            <label class="theme-switch"><input type="checkbox" id="chkBp" checked><span class="slider slider-bp"></span></label>
+                        </div>
+                        <div class="switch-row" id="row_chkEff" style="transition: opacity 0.3s;">
+                            <div class="switch-label"><span class="acronym-box acronym-eff" style="margin-right:6px;">E</span> <span id="ui_btnPrefEfficient">Efficient Path</span></div>
+                            <label class="theme-switch"><input type="checkbox" id="chkEff" checked><span class="slider slider-eff"></span></label>
+                        </div>
+                        <div class="switch-row" id="row_chkYld" style="transition: opacity 0.3s;">
+                            <div class="switch-label"><span class="acronym-box acronym-max" style="margin-right:6px;">Y</span> <span id="ui_btnPrefYield">Max Yield</span></div>
+                            <label class="theme-switch"><input type="checkbox" id="chkYld"><span class="slider slider-max"></span></label>
+                        </div>
+                    </div>
+
+                    <div style="border-top: 1px dashed var(--border); padding-top: 15px; display: flex; flex-direction: column; gap: 8px;">
+                        <div style="font-size: 10px; font-weight: bold; text-transform: uppercase; color: var(--accent); letter-spacing: 0.08em; margin-bottom: 2px;" id="ui_prefCatWorkforce">Workforce</div>
+                        <div class="switch-row">
+                            <div class="switch-label"><label id="ui_crafters" for="crafters">Crafters</label></div>
+                            <input type="number" id="crafters" value="1" min="1" style="width: 64px; text-align: center;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div style="padding: 15px; border-top: 1px solid var(--border); text-align: right; background: var(--bg-card);">
+                <button class="btn-dispatch" id="ui_ackPrefs" data-close="prefsModal" style="width: auto; display: inline-block; padding: 8px 16px;">Acknowledge</button>
+            </div>
+        </div>
+    </template>
+
+    <div id="usesModal" class="modal"></div>
+    <template id="tpl_usesModal">
+        <div class="modal-content module" style="padding: 0; max-width: 450px;">
+            <div class="modal-header-sticky">
+                <h3 style="margin:0; color:var(--accent);" id="ui_usesTitle">Material Details</h3>
+                <span class="close" data-close="usesModal">&times;</span>
+            </div>
+            <div class="modal-body-scroll" id="usesModalBody">
+            </div>
+            <div style="padding: 15px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: var(--bg-card);">
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn-mini" id="ui_btnBpBack" disabled style="padding: 4px 10px; font-size: 14px;">&#8592;</button>
+                    <button class="btn-mini" id="ui_btnBpFwd" disabled style="padding: 4px 10px; font-size: 14px;">&#8594;</button>
+                </div>
+                <button class="btn-dispatch" id="ui_btnClose" data-close="usesModal" style="width: auto; display: inline-block; padding: 8px 16px;">Close</button>
+            </div>
+        </div>
+    </template>
+
+    <div id="chartModal" class="modal"></div>
+    <template id="tpl_chartModal">
+        <div class="modal-content module chart-modal-content">
+            <div class="modal-header-sticky">
+                <h3 style="margin:0; color:var(--accent);" id="ui_chartTitle">Production Chain</h3>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <button class="btn-mini" id="btnChartReset">Reset View</button>
+                    <span class="close" data-close="chartModal">&times;</span>
+                </div>
+            </div>
+            <div class="chart-wrapper" id="chartSvgWrapper"></div>
+        </div>
+    </template>
+
+    <div id="helpModal" class="modal"></div>
+    <template id="tpl_helpModal">
+        <div class="modal-content module" style="padding: 0; max-width: 600px;">
+
+            <div class="modal-tabs">
+                <button class="tab-btn active" id="helpTabBtn_guide" data-action="switchHelpTab" data-tab="guide"><span id="ui_tabGuide">Guide</span></button>
+                <button class="tab-btn" id="helpTabBtn_materials" data-action="switchHelpTab" data-tab="materials"><span id="ui_tabMaterials">Materials</span></button>
+                <button class="tab-btn" id="helpTabBtn_legend" data-action="switchHelpTab" data-tab="legend"><span id="ui_tabLegend">Legend</span></button>
+                <span class="close" data-close="helpModal" style="padding: 10px 15px;">&times;</span>
+            </div>
+
+            <div id="helpTab_guide" class="tab-content active modal-body-scroll">
+                <div id="dynamicHelpContent" class="help-content"></div>
+            </div>
+
+            <div id="helpTab_materials" class="tab-content modal-body-scroll" style="display:none;">
+                <div id="helpResourcesList" style="padding: 4px;"></div>
+            </div>
+
+            <div id="helpTab_legend" class="tab-content modal-body-scroll" style="display:none;">
+                <div class="help-content">
+                    <h4 style="color:var(--accent); margin:10px 0 14px 0;" id="ui_legAcronyms">Acronyms</h4>
+                    <div class="legend-grid">
+                        <div class="legend-card"><span class="legend-badge">CP</span> Calx Powder</div>
+                        <div class="legend-card"><span class="legend-badge">SP</span> Saburra Powder</div>
+                        <div class="legend-card"><span class="legend-badge">BO</span> Blood Ore</div>
+                        <div class="legend-card"><span class="legend-badge">PI</span> Pig Iron</div>
+                        <div class="legend-card"><span class="legend-badge">GS</span> Grain Steel</div>
+                        <div class="legend-card"><span class="legend-badge">Stk</span> 10k Units</div>
+                        <div class="legend-card"><span class="legend-badge">LM</span> Light Mode</div>
+                        <div class="legend-card"><span class="legend-badge">DM</span> Dark Mode</div>
+
+                        <div class="legend-card"><span class="acronym-box acronym-eff">E</span> <span id="ui_legEff">Efficient</span></div>
+                        <div class="legend-card"><span class="acronym-box acronym-max">Y</span> <span id="ui_legYld">Max Yield</span></div>
+                        <div class="legend-card"><span class="acronym-box acronym-reg">R</span> <span id="ui_legReg">Region Locked</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="padding: 15px; border-top: 1px solid var(--border); text-align: right; background: var(--bg-card);">
+                <button class="btn-dispatch" id="ui_ackHelp" data-close="helpModal" style="width: auto; display: inline-block; padding: 8px 16px;">Acknowledge</button>
+            </div>
+        </div>
+    </template>
+
+    <div id="settingsModal" class="modal"></div>
+    <template id="tpl_settingsModal">
+        <div class="modal-content module" style="padding: 0;">
+            <div class="modal-tabs">
+                <button class="tab-btn active" id="tabBtn_view" data-action="switchTab" data-tab="view"><span id="ui_tabView">View</span></button>
+                <button class="tab-btn" id="tabBtn_data" data-action="switchTab" data-tab="data"><span id="ui_tabData">Data</span></button>
+                <span class="close" data-close="settingsModal" style="padding: 10px 15px;">&times;</span>
+            </div>
+
+            <div id="tab_view" class="tab-content active modal-body-scroll">
+                <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed var(--border);">
+                    <label style="font-weight: bold; color: var(--accent); margin-bottom: 8px; display: block;" id="ui_viewPers">Personalization</label>
+                    <div class="input-row">
+                        <label id="ui_viewLang">Language</label>
+                        <select id="lang" style="width: 100%; max-width: 180px;">
+                            <option value="cs">Čeština (Czech)</option>
+                            <option value="de">Deutsch</option>
+                            <option value="en" selected>English</option>
+                            <option value="es">Español</option>
+                            <option value="fr">Français</option>
+                            <option value="it">Italiano</option>
+                            <option value="hu">Magyar (Hungarian)</option>
+                            <option value="pl">Polski</option>
+                            <option value="pt">Português</option>
+                            <option value="ro">Română</option>
+                            <option value="fi">Suomi (Finnish)</option>
+                            <option value="sv">Svenska</option>
+                            <option value="tr">Türkçe</option>
+                            <option value="ru">Русский (Russian)</option>
+                            <option value="uk">Українська (Ukrainian)</option>
+                            <option value="ar">العربية (Arabic)</option>
+                        </select>
+                    </div>
+                    <div class="input-row">
+                        <label id="ui_format">Display Format</label>
+                        <select id="mode" style="width: 100%; max-width: 180px;">
+                            <option value="units" id="ui_optUnits" selected>Units</option>
+                            <option value="stacks" id="ui_optStacks">Stacks (10k)</option>
+                        </select>
+                    </div>
+                    <div class="input-row"><label id="ui_colorAccent">Primary Color</label><input type="color" id="colorAccent"></div>
+                    <div class="input-row"><label id="ui_colorBg">Secondary Color</label><input type="color" id="colorBg"></div>
+                    <div class="input-row"><label id="ui_colorText">Text Color</label><input type="color" id="colorText"></div>
+
+                    <div style="margin-top: 15px;">
+                        <button class="btn-theme" id="ui_btnResetColors" disabled>Reset Colors to Default</button>
+                    </div>
+                </div>
+
+                <div>
+                    <label style="font-weight: bold; color: var(--accent); margin-bottom: 8px; display: block;" id="ui_viewVis">Module Visibility</label>
+                    <div class="input-row" style="justify-content: flex-start; gap: 10px;"><input type="checkbox" id="view_prodCmd" checked> <label id="ui_viewProdCmd">Production Command</label></div>
+                    <div class="input-row" style="justify-content: flex-start; gap: 10px;"><input type="checkbox" id="view_defGather" checked> <label id="ui_viewGather">Missing Components</label></div>
+                    <div class="input-row" style="justify-content: flex-start; gap: 10px;"><input type="checkbox" id="view_mfgPipe" checked> <label id="ui_viewPipe">Manufacturing Pipeline</label></div>
+                    <div class="input-row" style="justify-content: flex-start; gap: 10px;"><input type="checkbox" id="view_byproducts" checked> <label id="ui_viewByproducts">Recovered Byproducts</label></div>
+                </div>
+            </div>
+
+            <div id="tab_data" class="tab-content modal-body-scroll" style="display: none;">
+                <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed var(--border);">
+                    <label style="font-weight: bold; color: var(--accent); margin-bottom: 8px; display: block;" id="ui_actDiscord">Discord Dispatch</label>
+                    <input type="text" id="webhookUrl" class="webhook-input" placeholder="https://discord.com/api/webhooks/...">
+                    <button class="btn-dispatch btn-discord" id="ui_btnSend">Send Order to Discord</button>
+                    <button class="btn-dispatch" id="ui_btnDiscord">Copy to Clipboard</button>
+                </div>
+
+                <div style="margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 20px;">
+                    <label id="ui_shareTitle" style="font-weight:bold; color:var(--accent); text-transform: uppercase;">Share / Import Setup</label>
+                    <p style="font-size: 11px; color: var(--text-dim); margin: 5px 0 10px 0;" id="ui_shareDesc"></p>
+                    <textarea id="shareCode" style="width: 100%; height: 60px; background: var(--bg-main); border: 1px solid var(--border); border-radius: 4px; color: var(--text); padding: 8px; font-family: monospace; font-size: 11px; resize: none; box-sizing: border-box; margin-bottom: 10px;" placeholder="Paste code here..."></textarea>
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <button class="btn-dispatch" id="ui_btnGenCode">Generate & Copy</button>
+                        <button class="btn-dispatch btn-accent" id="ui_btnLoadCode">Load Code</button>
+                    </div>
+                </div>
+
+                <p style="font-size: 12px; color: var(--text-dim); margin-top: 0;" id="ui_resetDesc"></p>
+                <button class="btn-dispatch btn-danger" id="ui_btnReset">Reset All</button>
+            </div>
+
+            <div style="padding: 15px; border-top: 1px solid var(--border); text-align: right; background: var(--bg-card);">
+                <button class="btn-dispatch" id="ui_ackSettings" data-close="settingsModal" style="width: auto; display: inline-block; padding: 8px 16px;">Acknowledge</button>
+            </div>
+        </div>
+    </template>
+
+    <div class="dashboard">
+        <div class="module" id="mod_prodCmd">
+            <div class="module-header" id="header_prodCmd">
+                <div class="header-content" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                    <div><span id="ui_prodCmdTitle">Production Command</span> <span class="toggle-icon">▼</span></div>
+                    <button class="btn-mini" id="btnOpenPrefs" style="margin: 0;"><span id="ui_btnPrefs">Preferences</span></button>
+                </div>
+            </div>
+            <div class="module-body" style="padding: 15px;">
+                <div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;">
+                    <div style="flex: 0 0 auto;">
+                        <div class="input-row" style="margin-bottom: 12px;">
+                            <label style="display:flex; align-items:center;">
+                                <span id="ui_targetMetalLabel">Search</span>
+                                <span id="btnHelpMaterialsIcon" style="cursor:pointer; color:var(--accent); font-weight:bold; border:1px solid var(--accent); border-radius:50%; width:14px; height:14px; display:inline-flex; align-items:center; justify-content:center; font-size:10px; margin-left:12px;" title="View Materials List">?</span>
+                            </label>
+                            <div style="position: relative; width: 100%; max-width: 180px;">
+                                <div class="search-wrap" style="margin-bottom: 0;">
+                                    <input type="text" id="targetMetalSearch" class="search-input"
+                                           placeholder="Search..." autocomplete="off"
+                                           style="margin-bottom: 0;">
+                                    <button class="search-clear" id="ui_clearTargetMetal" title="Clear">&times;</button>
+                                    <div id="targetMetalDropdown" class="lookup-dropdown"></div>
+                                </div>
+                                <input type="hidden" id="targetMetal" value="">
+                            </div>
+                        </div>
+
+                        <div class="input-row">
+                            <label id="ui_target">Amount:</label>
+                            <div style="display: flex; gap: 5px; width: 100%; max-width: 180px;">
+                                <input type="number" id="targetAmount" value="10000" style="width: 100%; text-align: left;">
+                                <button class="btn-sq btn-clear" id="ui_btnResetQty" title="Reset to 10000" style="margin: 0; padding: 0;">↺</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="prodCmdHint" style="margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--border); color: var(--text-dim); font-size: 13px; text-align: center; line-height: 1.5;">
+                    <span id="ui_prodCmdHint">Select a material to calculate your production plan.</span>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="module" id="mod_defGather">
+            <div class="module-header" id="header_defGather">
+                <div class="header-progress-bg" id="gatherProgressBar" style="background-color: var(--accent);"></div>
+                <div class="header-content">
+                    <span><span id="ui_defGather">Missing Components</span> <span class="toggle-icon">▼</span></span>
+                    <span style="font-size:11px; font-weight:normal; color:var(--text);">
+                        <span id="statStacks">0.00</span> Stacks <span id="gatherProgressText" style="margin-left: 8px; font-weight:bold;">0%</span>
+                    </span>
+                </div>
+            </div>
+            <div class="module-body logistics-grid" id="gatherOutput"></div>
+        </div>
+
+        <div class="module" id="mod_mfgPipe">
+            <div class="module-header" id="header_mfgPipe">
+                <div class="header-progress-bg" id="projectProgressBar" style="background-color: var(--success);"></div>
+                <div class="header-content">
+                    <span><span id="ui_mfgPipe">Manufacturing Pipeline</span> <span class="toggle-icon">▼</span></span>
+                    <span id="projectProgressText" style="font-size:11px; font-weight:normal; color:var(--text);">0%</span>
+                </div>
+            </div>
+
+            <div class="module-body" style="position:relative;">
+                <div class="module-actions" style="padding-bottom: 15px; margin-bottom: 15px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                    <div style="display:flex; gap: 12px; align-items:center; font-size:10px; font-weight:bold; text-transform: uppercase;">
+                        <span><span class="acronym-box acronym-eff" style="margin-right:4px;">E</span> <span id="ui_lblEfficient">Efficient</span></span>
+                        <span><span class="acronym-box acronym-max" style="margin-right:4px;">Y</span> <span id="ui_lblMaxYield">Max Yield</span></span>
+                        <span><span class="acronym-box acronym-reg" style="margin-right:4px;">R</span> <span id="ui_lblRegionLocked">Region Locked</span></span>
+                    </div>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <button class="btn-mini btn-danger" id="btnPipeReset"><span id="ui_btnPipeReset">Reset</span></button>
+                        <div class="view-toggles" style="display:flex; gap:8px;">
+                            <button class="btn-mini active" id="btnOverview" data-action="setPipeView" data-view="overview"><span id="ui_btnOverview">Overview</span></button>
+                            <button class="btn-mini" id="btnFocus" data-action="setPipeView" data-view="focus"><span id="ui_btnFocus">Focus</span></button>
+                            <button class="btn-mini btn-accent" id="btnViewChart" style="display:none;"><span id="ui_btnViewChart">View Chart</span></button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="stepsOutput"></div>
+
+                <div id="focusNav" style="display:none; justify-content:space-between; align-items:center; margin-top:15px; padding-top:10px; border-top:1px solid var(--border);">
+                    <button class="btn-cart" id="btnFocusPrev" style="width:auto; padding: 0 12px;">Prev</button>
+                    <span id="focusProgressText" style="font-weight:bold; font-size:12px; color:var(--accent);">Step 1 of X</span>
+                    <button class="btn-cart" id="btnFocusNext" style="width:auto; padding: 0 12px;">Next</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="module" id="mod_byproducts" style="display:none;">
+            <div class="module-header" id="header_byproducts">
+                <div class="header-content">
+                    <span><span id="ui_modByproductsTitle">Recovered Byproducts</span> <span class="toggle-icon">▼</span></span>
+                </div>
+            </div>
+            <div class="module-body logistics-grid" id="bpOutput" style="padding-top: 15px;"></div>
+        </div>
+    </div>
+
+    <div class="app-footer">
+        <div id="saveStatus" style="margin-bottom: 10px; font-weight: bold; color: var(--success);">Ready</div>
+        <span id="ui_footerCopy">© 2026 Made by [MTM] Jaegh for MERCANTORM guild.</span><br>
+        <i id="ui_footerQuote">"Steel wins battles, silver wins wars"</i>
+    </div>
+
+    <button id="btnReturnTop" class="btn-return-top">▲</button>
+    <div id="toast"></div>
+
+    <script type="module" src="js/main.js" defer></script>
+</body>
+</html>

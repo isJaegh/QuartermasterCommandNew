@@ -1,0 +1,300 @@
+import { CATEGORIES, getAllItems } from '../data/data.js';
+import { i18n } from '../data/lang.js';
+import { state } from '../state/store.js';
+import { handlePipelineChange } from '../core/pipeline.js';
+import { getRelevantItems } from '../core/engine.js';
+import { closeModal } from './modals.js';
+import { getItemName, getDefaultPrice } from '../utils/format.js';
+
+let _lastTargetForVisibility = null; // Tracks target changes to auto-toggle switches
+
+export function initMarketData() {
+    getAllItems().forEach(k => {
+        if (!state.marketData[k]) state.marketData[k] = [{ p: getDefaultPrice(k), q: 0 }];
+    });
+}
+
+export function addMarketTier(k) {
+    state.marketData[k].push({ p: getDefaultPrice(k), q: 0 });
+    renderMarketTable();
+}
+
+export function removeMarketTier(k, idx) {
+    state.marketData[k].splice(idx, 1);
+    renderMarketTable();
+    handlePipelineChange();
+}
+
+export function clearMarketTier(k, idx) {
+    state.marketData[k][idx].q = 0;
+    renderMarketTable();
+    handlePipelineChange();
+}
+
+export function clearCart() {
+    getAllItems().forEach(k => {
+        state.marketData[k] = [{ p: getDefaultPrice(k), q: 0 }];
+    });
+    renderMarketTable();
+    handlePipelineChange();
+}
+
+export function updateMarketTier(k, idx, field, val) {
+    state.marketData[k][idx][field] = Number(val) || 0;
+    handlePipelineChange();
+}
+
+export function quickAddMarket(k, idx) {
+    const isStacks = document.getElementById('mode').value === 'stacks';
+    let current = Number(state.marketData[k][idx].q) || 0;
+    state.marketData[k][idx].q = isStacks ? parseFloat((current + 1).toFixed(4)) : current + 10000;
+    renderMarketTable();
+    handlePipelineChange();
+}
+
+export function quickSubMarket(k, idx) {
+    const isStacks = document.getElementById('mode').value === 'stacks';
+    let current = Number(state.marketData[k][idx].q) || 0;
+    state.marketData[k][idx].q = Math.max(0, isStacks ? parseFloat((current - 1).toFixed(4)) : current - 10000);
+    renderMarketTable();
+    handlePipelineChange();
+}
+
+export function autoFillMarketItem(k) {
+    const mode = document.getElementById('mode').value;
+    let needed = state.pureDeficits[k] || 0;
+    let currentP = state.marketData[k]?.[0]?.p || getDefaultPrice(k);
+
+    state.marketData[k] = [{
+        p: currentP,
+        q: mode === 'stacks' ? parseFloat((needed / 10000).toFixed(4)) : needed
+    }];
+
+    renderMarketTable();
+    handlePipelineChange();
+}
+
+export function autoFillCart() {
+    getAllItems().forEach(k => {
+        const mode = document.getElementById('mode').value;
+        let needed = state.pureDeficits[k] || 0;
+        state.marketData[k] = [{
+            p: state.marketData[k]?.[0]?.p || getDefaultPrice(k),
+            q: mode === 'stacks' ? parseFloat((needed / 10000).toFixed(4)) : needed
+        }];
+    });
+    renderMarketTable();
+    handlePipelineChange();
+    closeModal('cartModal');
+}
+
+export function renderMarketTable() {
+    const container = document.getElementById('marketContainer');
+    if (!container) return;
+    const t = i18n[state.currentLang] || i18n['en'];
+    const addLabel = document.getElementById('mode').value === 'stacks' ? (t.qAddStk || '+1 Stk') : (t.qAdd || '+10k');
+    const subLabel = document.getElementById('mode').value === 'stacks' ? (t.qSubStk || '-1 Stk') : (t.qSub || '-10k');
+
+    let html = ``;
+
+    CATEGORIES.forEach(cat => {
+        html += `<div id="m_cat_${cat.id}" style="display:none;"><div class="bank-category" style="margin-top:10px; margin-bottom:5px;">${(t.categories && t.categories[cat.id]) ? t.categories[cat.id] : cat.id}</div>`;
+
+        cat.items.forEach(k => {
+            if (!state.marketData[k]) return;
+            const tiers = state.marketData[k];
+            let tiersHtml = '';
+
+            tiers.forEach((tier, idx) => {
+                let addRemoveBtn = idx > 0 ?
+                    `<button class="btn-warning btn-sq" style="margin: 0; padding: 0; font-size:14px;" title="Remove Tier" data-action="removeMarketTier" data-key="${k}" data-idx="${idx}">-</button>` :
+                    `<button class="btn-accent btn-sq" style="margin: 0; padding: 0; font-size:14px; color:#000;" title="Add Tier" data-action="addMarketTier" data-key="${k}">+</button>`;
+
+                tiersHtml += `
+                    <div class="market-tier-row">
+                        <div style="display: flex; align-items: center; gap: 8px; min-width: 130px;">
+                            <span style="color:var(--text-dim); font-size:11px; font-weight:bold; white-space: nowrap;">↳ ${t.tblOrder || 'Order'} ${idx + 1}</span>
+                            <input type="number" style="width: 55px; margin: 0;" value="${tier.p}" title="Price" max="999" data-action="updatePrice" data-key="${k}" data-idx="${idx}">
+                        </div>
+                        <div style="display:flex; gap: 4px; align-items: center; flex-wrap: wrap;">
+                            <button class="btn-stack q-sub" style="margin: 0; min-width:30px; padding:0 4px;" data-action="quickSubMarket" data-key="${k}" data-idx="${idx}">${subLabel}</button>
+                            <input type="number" style="width: 95px; margin: 0;" value="${tier.q}" title="Qty" data-action="updateQty" data-key="${k}" data-idx="${idx}">
+                            <button class="btn-stack q-add" style="margin: 0; min-width:30px; padding:0 4px;" data-action="quickAddMarket" data-key="${k}" data-idx="${idx}">${addLabel}</button>
+                            <button class="btn-cart btn-success" style="margin: 0; padding: 0 8px;" title="Auto-Fill Missing" data-action="autoFillMarketItem" data-key="${k}">${t.btnAutoFill || 'Fill'}</button>
+                            <button class="btn-clear" style="margin: 0; padding: 0 8px;" title="Clear Qty" data-action="clearMarketTier" data-key="${k}" data-idx="${idx}">${t.btnClearCart || 'Clear'}</button>
+                            ${addRemoveBtn}
+                        </div>
+                    </div>`;
+            });
+
+            let itemName = getItemName(k, t);
+
+            html += `<div class="market-card" id="row_m_${k}" style="display:none;">
+                <div class="market-card-header">
+                    <div style="font-weight:bold; color:var(--text); font-size: 1.1em;">${itemName}</div>
+                    <div style="display: flex; gap: 15px; text-align: right;">
+                        <div><span style="font-size: 10px; color: var(--text-dim); text-transform: uppercase;">${t.tblCost || 'Cost'}</span> <br><span style="font-weight:bold; color:var(--accent); font-size: 1.1em;" id="cost_${k}">0.00</span></div>
+                        <div><span style="font-size: 10px; color: var(--text-dim); text-transform: uppercase;">${t.tblStash || 'Stash'}</span> <br><span style="color:var(--text-dim);" id="stash_${k}">0</span></div>
+                    </div>
+                </div>
+                <div>${tiersHtml}</div>
+            </div>`;
+        });
+        html += `</div>`;
+    });
+
+    html += `<div id="cartSearchEmpty" class="search-empty" style="display:none;">No items match your search.</div>`;
+    html += `<div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; padding-top:10px; border-top:1px solid var(--border);"><div style="font-weight:bold; text-transform:uppercase; color:var(--text-dim);">${t.cartTotal || 'Total'}</div><div id="cartTotalGold" style="font-weight:bold; color:var(--accent); font-size:1.3em;">0.00 g</div></div>`;
+    container.innerHTML = html;
+
+    if (!container.dataset.listenersBound) {
+        container.addEventListener('click', (e) => {
+            const btn = e.target.closest('[data-action]');
+            if (!btn) return;
+            const k = btn.dataset.key;
+            const idx = btn.dataset.idx !== undefined ? Number(btn.dataset.idx) : undefined;
+            const action = btn.dataset.action;
+            if (action === 'removeMarketTier') removeMarketTier(k, idx);
+            else if (action === 'addMarketTier') addMarketTier(k);
+            else if (action === 'quickSubMarket') quickSubMarket(k, idx);
+            else if (action === 'quickAddMarket') quickAddMarket(k, idx);
+            else if (action === 'autoFillMarketItem') autoFillMarketItem(k);
+            else if (action === 'clearMarketTier') clearMarketTier(k, idx);
+        });
+        container.addEventListener('input', (e) => {
+            const el = e.target;
+            const k = el.dataset.key;
+            const idx = el.dataset.idx !== undefined ? Number(el.dataset.idx) : undefined;
+            if (el.dataset.action === 'updatePrice') updateMarketTier(k, idx, 'p', el.value);
+            else if (el.dataset.action === 'updateQty') updateMarketTier(k, idx, 'q', el.value);
+        });
+        container.dataset.listenersBound = 'true';
+    }
+
+    if (document.getElementById('targetMetal')) {
+        updateVisibility(document.getElementById('targetMetal').value);
+    }
+}
+
+export function updateVisibility(targetMetal) {
+    const isTargetEmpty = !targetMetal || targetMetal.trim() === '';
+
+    const showAllBankEl = document.getElementById('showAllBank');
+    const showAllCartEl = document.getElementById('showAllCart');
+
+    const searchBank = (document.getElementById('searchBank')?.value || "").toLowerCase();
+    const searchCart = (document.getElementById('searchCart')?.value || "").toLowerCase();
+
+    // Automatically uncheck the toggle if the search box is not empty
+    if (searchBank !== "" && showAllBankEl) showAllBankEl.checked = false;
+    if (searchCart !== "" && showAllCartEl) showAllCartEl.checked = false;
+
+    // --- NEW: Automatically toggle OFF "Show All" when a new target material is detected
+    if (targetMetal !== _lastTargetForVisibility) {
+        if (!isTargetEmpty) {
+            if (showAllBankEl) showAllBankEl.checked = false;
+            if (showAllCartEl) showAllCartEl.checked = false;
+        }
+        _lastTargetForVisibility = targetMetal;
+    }
+
+    // If target is empty, we force "Show All" to be checked (if they aren't searching) and disable the toggle.
+    if (isTargetEmpty) {
+        if (showAllBankEl) {
+            showAllBankEl.disabled = true;
+            if (searchBank === "") showAllBankEl.checked = true;
+        }
+        if (showAllCartEl) {
+            showAllCartEl.disabled = true;
+            if (searchCart === "") showAllCartEl.checked = true;
+        }
+    } else {
+        if (showAllBankEl) showAllBankEl.disabled = false;
+        if (showAllCartEl) showAllCartEl.disabled = false;
+    }
+
+    const relevant = isTargetEmpty ? new Set() : getRelevantItems(targetMetal);
+    const showAllBank = showAllBankEl?.checked;
+    const showAllCart = showAllCartEl?.checked;
+
+    const t = i18n[state.currentLang] || i18n['en'];
+
+    let totalVisibleBank = 0;
+    let totalVisibleCart = 0;
+
+    CATEGORIES.forEach(cat => {
+        let catHasVisibleBank = false;
+        let catHasVisibleMarket = false;
+
+        cat.items.forEach(k => {
+            let itemName = getItemName(k, t).toLowerCase();
+            let matchBankSearch = searchBank === "" || itemName.includes(searchBank);
+            let matchCartSearch = searchCart === "" || itemName.includes(searchCart);
+
+            let isActive = window.activeResources && window.activeResources.has(k);
+
+            const rowB = document.getElementById('row_b_' + k);
+            if (rowB) {
+                let shouldShow = false;
+                if (searchBank !== "") {
+                    shouldShow = matchBankSearch;
+                } else {
+                    shouldShow = (showAllBank || isTargetEmpty || relevant.has(k) || isActive);
+                    if (!showAllBank && !isTargetEmpty && k === targetMetal) shouldShow = false;
+                }
+
+                rowB.style.display = shouldShow ? 'grid' : 'none';
+                if (shouldShow) { catHasVisibleBank = true; totalVisibleBank++; }
+            }
+
+            const rowM = document.getElementById('row_m_' + k);
+            if (rowM) {
+                let shouldShow = false;
+                if (searchCart !== "") {
+                    shouldShow = matchCartSearch;
+                } else {
+                    shouldShow = (showAllCart || relevant.has(k) || isActive);
+                    if (!showAllCart && !isTargetEmpty && k === targetMetal) shouldShow = false;
+                }
+
+                rowM.style.display = shouldShow ? 'block' : 'none';
+                if (shouldShow) { catHasVisibleMarket = true; totalVisibleCart++; }
+            }
+        });
+
+        const catDivB = document.getElementById('b_cat_' + cat.id);
+        if (catDivB) catDivB.style.display = catHasVisibleBank ? 'block' : 'none';
+
+        const mCatDiv = document.getElementById('m_cat_' + cat.id);
+        if (mCatDiv) mCatDiv.style.display = catHasVisibleMarket ? 'block' : 'none';
+    });
+
+    const bankEmpty = document.getElementById('bankSearchEmpty');
+    if (bankEmpty) bankEmpty.style.display = (searchBank !== '' && totalVisibleBank === 0) ? 'block' : 'none';
+
+    const cartEmpty = document.getElementById('cartSearchEmpty');
+    if (cartEmpty) cartEmpty.style.display = (searchCart !== '' && totalVisibleCart === 0) ? 'block' : 'none';
+
+    const marketContainer = document.getElementById('marketContainer');
+    const btnAutoFill = document.getElementById('ui_btnAutoFill');
+    const btnClearCart = document.getElementById('ui_btnClearCart');
+    const cartSidebarBtn = document.querySelector('.btn-sidebar[data-modal="cartModal"]');
+
+    if (isTargetEmpty) {
+        if (marketContainer) {
+            marketContainer.style.opacity = '0.4';
+            marketContainer.style.pointerEvents = 'none';
+        }
+        if (btnAutoFill) btnAutoFill.disabled = true;
+        if (btnClearCart) btnClearCart.disabled = true;
+        if (cartSidebarBtn) cartSidebarBtn.disabled = true;
+    } else {
+        if (marketContainer) {
+            marketContainer.style.opacity = '1';
+            marketContainer.style.pointerEvents = 'auto';
+        }
+        if (btnAutoFill) btnAutoFill.disabled = false;
+        if (btnClearCart) btnClearCart.disabled = false;
+        if (cartSidebarBtn) cartSidebarBtn.disabled = false;
+    }
+}

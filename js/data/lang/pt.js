@@ -1,0 +1,48 @@
+import { baseItems } from '../langBase.js';
+import { helpContent } from '../helpContent.js';
+
+export default {
+    tabPrefs: "Preferências", tabData: "Dados", tabHelp: "Ajuda", tabView: "Visão", tabGuide: "Guia", tabLegend: "Legenda",
+    resetDesc: "Limpar todo o inventário, quantidades do carrinho e objetivos.",
+    shareTitle: "Compartilhar / Importar Config", shareDesc: "Gere um código para compartilhar ou cole um para carregar.",
+    btnGenCode: "Gerar e Copiar", btnLoadCode: "Carregar Código", importSuccess: "Carregado com sucesso!", importError: "Código inválido.", exportSuccess: "Copiado para a área de transferência!",
+    format: "Formato", optUnits: "Unidades", optStacks: "Pilhas (10k)", webhook: "URL Webhook Discord",
+
+    btnProd: "Produção", prodCmdTitle: "Comando de Produção", targetMetalLabel: "Recurso Alvo", crafters: "Artesãos", target: "Quantidade:",
+    btnAutoFill: "Preencher Tudo", btnClearCart: "Limpar",
+    yieldMods: "Preferências", mastery: "Maestria (+6%)", refining: "Refino (+3%)", extraction: "Extração (+3%)", prefCatModifiers: "Modificadores de rendimento", prefCatRoute: "Rota e Exibição", prefCatWorkforce: "Mão de obra",
+
+    btnDiscord: "Copiar Área Transf.", btnSend: "Enviar para o Discord",
+    btnPrefs: "Preferências", yieldModsModal: "Preferências",
+    btnBank: "Inventário", invBankTitle: "Inventário",
+    invBank: "Inventário", showAllBank: "Mostrar todos os materiais", showAllCart: "Mostrar todos os materiais", btnReset: "Resetar Tudo", defGather: "Componentes Faltantes", mfgPipe: "Linha de Produção", marketCart: "Carrinho", marketCartTitle: "Carrinho de Mercado",
+    tblPrice: "Preço", tblBuy: "Comprar", tblCost: "Custo", tblStash: "Reserva", cartTotal: "Total do Carrinho:", tblOrder: "Pedido",
+    noTarget: "Nenhum alvo definido.", allCovered: "Inventário cobre todos os materiais!", searchPlaceholder: "Pesquisar...",
+    verbCrush: "Triturar", verbGrind: "Moer", verbExtract: "Extrair", verbSmelt: "Fundir", verbBake: "Assar", verbAlloy: "Fundir Liga", verbProcess: "Processar",
+    inMachine: "em", stepWith: "com", stepAnd: "e", perCrafter: "(Por Artesão)", stepPrefix: "Passo",
+    stepYieldsMain: "Rende:", stepByproducts: "Subprodutos:", none: "Nenhum",
+    pipeCompleted: "Progresso", btnPipeReset: "Resetar",
+    tooltipBestYield: "Mais Eficiente (Menor Custo)", tooltipMaxYield: "Máx Subprodutos Gerados", tooltipRegionLocked: "Bloqueado por Região",
+    tooltipMaxCraft: "Calcular produção máxima com o inventário", tooltipShowAll: "Mostrar itens não relacionados",
+    resetPrompt: "Zerar todos os valores?", restartPrompt: "Reiniciar linha de produção?", modalActionsTitle: "Ações",
+    discHeader: "PEDIDO LOGÍSTICO", discReq: "COMPONENTES FALTANTES:", discStock: "Tudo coberto.", discCopied: "Copiado!",
+    discMarket: "COMPRAS NO MERCADO:", errWebhook: "Insira uma URL do Discord válida.", errSend: "Erro ao enviar.", sucSend: "Enviado com sucesso!",
+    qAdd: "+10k", qAddStk: "+1 Pilha", qSub: "-10k", qSubStk: "-1 Pilha", byproductsTitle: "TOTAL DE SUBPRODUTOS", bpTitle: "TOTAL DE SUBPRODUTOS", btnBp: "Subprodutos",
+    btnPrefEfficient: "Rota Eficiente", btnPrefYield: "Máximo Rendimento", lblEfficient: "Eficiente", lblMaxYield: "Máx Rendimento", lblRegionLocked: "Bloqueio Regional",
+    chkBp: "Mostrar subprodutos", colorAccent: "Cor Primária", colorBg: "Cor Secundária", colorText: "Cor do Texto", btnResetColors: "Resetar Cores",
+    viewPers: "Personalização", viewVis: "Visibilidade dos Módulos", viewLang: "Idioma", viewGather: "Componentes Faltantes", viewPipe: "Linha de Produção", viewProdCmd: "Comando de Produção", viewByproducts: "Subprodutos Recuperados",
+    btnCart: "Carrinho", btnSettings: "Configurações", btnHelp: "Ajuda", btnExportCSV: "Exportar CSV", actDiscord: "Despacho Discord",
+    btnMaxText: "Calcular Máximo Fabricável", maxTitle: "Limite Atingido", maxAcknowledge: "Confirmar",
+    maxCraftAny: "Não é possível fabricar [item] com o inventário atual.", maxMissing: "Para atingir o alvo [target], falta:", maxTotalCraft: "Materiais suficientes para fabricar", maxCalculatedGoal: "Você tem o suficiente para o objetivo.",
+    legAcronyms: "Acrônimos", legEff: "Eficiente", legYld: "Máx Rendimento", legReg: "Bloqueio Regional",
+
+    categories: { raw: "Matérias-Primas", basicExt: "Extrações Básicas", intOre: "Minérios Intermediários", advOre: "Minérios Avançados", catalyst: "Catalisadores", refined: "Metais Refinados", "Raw Materials": "Matérias-Primas", "Basic Extractions": "Extrações Básicas", "Intermediate Ores": "Minérios Intermediários", "Advanced Ores": "Minérios Avançados", "Catalysts": "Catalisadores", "Refined Metals": "Metais Refinados" },
+    items: baseItems,
+    helpHtml: helpContent['pt'],
+
+    ackBank: "Confirmar", ackCart: "Confirmar", ackPrefs: "Confirmar", ackHelp: "Confirmar", ackSettings: "Confirmar",
+    searchEmptyState: "Pesquise um material para ver os detalhes de produção.", searchNotFound: "Nenhum material encontrado com esse nome.",
+    tabMaterials: "Materiais",
+    modByproductsTitle: "Subprodutos Recuperados", usesProducedFrom: "é produzido a partir de:", usesCanMake: "pode ser usado para fazer:", usesSetTarget: "Definir como alvo", usesNone: "Nenhuma receita ou fonte conhecida para", usesDetails: "Detalhes", usesTitle: "Detalhes do Material", btnClose: "Fechar",
+    prodCmdHint: "Selecione um material para calcular seu plano de produção.", btnOverview: "Visão Geral", btnFocus: "Foco", statusReady: "Pronto", statusSaved: "Salvo", footerQuote: '"O aço vence batalhas, a prata vence guerras"', footerCopy: "© 2026 Criado por [MTM] Jaegh para a guilda MERCANTORM.", resetTooltip: "Redefinir para 10000"
+};

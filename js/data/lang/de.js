@@ -1,0 +1,48 @@
+import { baseItems } from '../langBase.js';
+import { helpContent } from '../helpContent.js';
+
+export default {
+    tabPrefs: "Einstellungen", tabData: "Daten", tabHelp: "Hilfe", tabView: "Ansicht", tabGuide: "Anleitung", tabLegend: "Legende",
+    resetDesc: "Löschen Sie Ihr gesamtes gespeichertes Inventar, die Warenkorbmengen und Ziele.",
+    shareTitle: "Setup Teilen / Importieren", shareDesc: "Generieren Sie einen Code, um Ihr aktuelles Setup zu teilen, oder fügen Sie einen Code ein.",
+    btnGenCode: "Generieren & Kopieren", btnLoadCode: "Code Laden", importSuccess: "Setup erfolgreich geladen!", importError: "Ungültiger Code.", exportSuccess: "Code in die Zwischenablage kopiert!",
+    format: "Anzeigeformat", optUnits: "Einheiten", optStacks: "Stapel (10k)", webhook: "Discord Webhook-URL",
+
+    btnProd: "Produktion", prodCmdTitle: "Produktionsbefehl", targetMetalLabel: "Zielressource", crafters: "Handwerker", target: "Menge:",
+    btnAutoFill: "Alles Füllen", btnClearCart: "Leeren",
+    yieldMods: "Präferenzen", mastery: "Meisterschaft (+6%)", refining: "Raffinierung (+3%)", extraction: "Extraktion (+3%)", prefCatModifiers: "Ertragsmodifikatoren", prefCatRoute: "Route & Anzeige", prefCatWorkforce: "Arbeitskräfte",
+
+    btnDiscord: "In Zwischenablage kopieren", btnSend: "Auftrag an Discord senden",
+    btnPrefs: "Präferenzen", yieldModsModal: "Präferenzen",
+    btnBank: "Inventar", invBankTitle: "Inventar",
+    invBank: "Inventar", showAllBank: "Alle Materialien anzeigen", showAllCart: "Alle Materialien anzeigen", btnReset: "Alles Zurücksetzen", defGather: "Fehlende Komponenten", mfgPipe: "Fertigungspipeline", marketCart: "Warenkorb", marketCartTitle: "Warenkorb",
+    tblPrice: "Preis", tblBuy: "Kaufmenge", tblCost: "Kosten", tblStash: "Vorrat", cartTotal: "Warenkorb Gesamt:", tblOrder: "Bestellung",
+    noTarget: "Kein Ziel festgelegt.", allCovered: "Inventar & Warenkorb decken alle benötigten Materialien ab!", searchPlaceholder: "Suchen...",
+    verbCrush: "Zerkleinern", verbGrind: "Mahlen", verbExtract: "Extrahieren", verbSmelt: "Schmelzen", verbBake: "Backen", verbAlloy: "Legieren", verbProcess: "Verarbeiten",
+    inMachine: "im", stepWith: "mit", stepAnd: "und", perCrafter: "(Pro Handwerker)", stepPrefix: "Schritt",
+    stepYieldsMain: "Ergibt:", stepByproducts: "Nebenprodukte:", none: "Keine",
+    pipeCompleted: "Produktionsfortschritt", btnPipeReset: "Zurücksetzen",
+    tooltipBestYield: "Am effizientesten (Niedrigste Materialkosten)", tooltipMaxYield: "Max. Nebenprodukte generiert", tooltipRegionLocked: "Region-gesperrt",
+    tooltipMaxCraft: "Berechnen, wie viel mit dem Inventar herstellbar ist", tooltipShowAll: "Materialien anzeigen, die nicht zum Zielmetall gehören",
+    resetPrompt: "Alle Inventarwerte und den Warenkorb auf null zurücksetzen?", restartPrompt: "Pipeline neu starten? Dadurch werden alle Schritte deaktiviert und Ausbeuten entfernt.", modalActionsTitle: "Pipeline-Aktionen",
+    discHeader: "LOGISTIKAUFTRAG", discReq: "FEHLENDE KOMPONENTEN:", discStock: "Alle Materialien abgedeckt.", discCopied: "Kopiert!",
+    discMarket: "MARKTKÄUFE:", errWebhook: "Bitte gültige Discord-Webhook-URL eingeben.", errSend: "Fehler beim Senden an Discord.", sucSend: "Auftrag an Discord gesendet!",
+    qAdd: "+10k", qAddStk: "+1 Stk", qSub: "-10k", qSubStk: "-1 Stk", byproductsTitle: "GESAMTE NEBENPRODUKTE", bpTitle: "GESAMTE NEBENPRODUKTE", btnBp: "Nebenprodukte",
+    btnPrefEfficient: "Effizienter Pfad", btnPrefYield: "Max. Ausbeute", lblEfficient: "Effizient", lblMaxYield: "Max. Ausbeute", lblRegionLocked: "Region-gesperrt",
+    chkBp: "Nebenprodukte anzeigen", colorAccent: "Primärfarbe", colorBg: "Sekundärfarbe", colorText: "Textfarbe", btnResetColors: "Farben zurücksetzen",
+    viewPers: "Personalisierung", viewVis: "Modulsichtbarkeit", viewLang: "Sprache", viewGather: "Fehlende Komponenten", viewPipe: "Fertigungspipeline", viewProdCmd: "Produktionsbefehl", viewByproducts: "Gewonnene Nebenprodukte",
+    btnCart: "Warenkorb", btnSettings: "Einstellungen", btnHelp: "Hilfe", btnExportCSV: "Als CSV exportieren", actDiscord: "Discord-Versand",
+    btnMaxText: "Max. Herstellbar berechnen", maxTitle: "Herstellungslimit erreicht", maxAcknowledge: "Bestätigen",
+    maxCraftAny: "Kann mit aktuellem Inventar kein [item] herstellen.", maxMissing: "Um das ursprüngliche Ziel von [target] zu erreichen, fehlt:", maxTotalCraft: "Ausreichend Materialien zum Herstellen von", maxCalculatedGoal: "Sie haben genug, um das Ziel zu erreichen.",
+    legAcronyms: "Akronyme", legEff: "Effizient", legYld: "Max. Ausbeute", legReg: "Region-gesperrt",
+
+    categories: { raw: "Rohmaterialien", basicExt: "Basis-Extraktionen", intOre: "Zwischenerze", advOre: "Fortgeschrittene Erze", catalyst: "Katalysatoren", refined: "Raffinierte Metalle", "Raw Materials": "Rohmaterialien", "Basic Extractions": "Basis-Extraktionen", "Intermediate Ores": "Zwischenerze", "Advanced Ores": "Fortgeschrittene Erze", "Catalysts": "Katalysatoren", "Refined Metals": "Raffinierte Metalle" },
+    items: baseItems,
+    helpHtml: helpContent['de'],
+
+    ackBank: "Bestätigen", ackCart: "Bestätigen", ackPrefs: "Bestätigen", ackHelp: "Bestätigen", ackSettings: "Bestätigen",
+    searchEmptyState: "Suchen Sie nach einem Material, um Produktionsdetails anzuzeigen.", searchNotFound: "Kein Material mit diesem Namen gefunden.",
+    tabMaterials: "Materialien",
+    modByproductsTitle: "Gewonnene Nebenprodukte", usesProducedFrom: "wird hergestellt aus:", usesCanMake: "kann verwendet werden zur Herstellung von:", usesSetTarget: "Als Ziel festlegen", usesNone: "Keine bekannten Rezepte oder Quellen für", usesDetails: "Details", usesTitle: "Materialdetails", btnClose: "Schließen",
+    prodCmdHint: "Wählen Sie ein Material, um Ihren Produktionsplan zu berechnen.", btnOverview: "Übersicht", btnFocus: "Fokus", statusReady: "Bereit", statusSaved: "Gespeichert", footerQuote: '"Stahl gewinnt Schlachten, Silber gewinnt Kriege"', footerCopy: "© 2026 Erstellt von [MTM] Jaegh für die MERCANTORM-Gilde.", resetTooltip: "Auf 10000 zurücksetzen"
+};

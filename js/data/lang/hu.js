@@ -1,0 +1,48 @@
+import { baseItems } from '../langBase.js';
+import { helpContent } from '../helpContent.js';
+
+export default {
+    tabPrefs: "Beállítások", tabData: "Adatok", tabHelp: "Súgó", tabView: "Nézet", tabGuide: "Útmutató", tabLegend: "Jelmagyarázat",
+    resetDesc: "Törölje a mentett készletet, a kosár tartalmát és a célokat.",
+    shareTitle: "Megosztás / Importálás", shareDesc: "Generáljon kódot a beállítások megosztásához.",
+    btnGenCode: "Generálás és Másolás", btnLoadCode: "Kód Betöltése", importSuccess: "Sikeresen betöltve!", importError: "Érvénytelen kód.", exportSuccess: "Vágólapra másolva!",
+    format: "Megjelenítési formátum", optUnits: "Egységek", optStacks: "Halmok (10k)", webhook: "Discord Webhook URL",
+
+    btnProd: "Termelés", prodCmdTitle: "Termelési Parancs", targetMetalLabel: "Cél nyersanyag", crafters: "Kézművesek", target: "Mennyiség:",
+    btnAutoFill: "Összes Kitöltése", btnClearCart: "Törlés",
+    yieldMods: "Beállítások", mastery: "Mester (+6%)", refining: "Finomítás (+3%)", extraction: "Kivonás (+3%)", prefCatModifiers: "Hozammódosítók", prefCatRoute: "Útvonal és megjelenítés", prefCatWorkforce: "Munkaerő",
+
+    btnDiscord: "Vágólapra másolás", btnSend: "Küldés Discordra",
+    btnPrefs: "Beállítások", yieldModsModal: "Beállítások",
+    btnBank: "Leltár", invBankTitle: "Leltár",
+    invBank: "Leltár", showAllBank: "Összes mutatása", showAllCart: "Összes mutatása", btnReset: "Minden Visszaállítása", defGather: "Hiányzó Komponensek", mfgPipe: "Gyártósor", marketCart: "Piac Kosár", marketCartTitle: "Piac Kosár",
+    tblPrice: "Ár", tblBuy: "Vétel", tblCost: "Költség", tblStash: "Készlet", cartTotal: "Kosár Összesen:", tblOrder: "Rendelés",
+    noTarget: "Nincs cél megadva.", allCovered: "A leltár és a kosár fedez mindent!", searchPlaceholder: "Keresés...",
+    verbCrush: "Zúzás", verbGrind: "Őrlés", verbExtract: "Kivonás", verbSmelt: "Olvasztás", verbBake: "Sütés", verbAlloy: "Ötvözés", verbProcess: "Feldolgozás",
+    inMachine: "a", stepWith: "vele", stepAnd: "és", perCrafter: "(Kézművesenként)", stepPrefix: "Lépés",
+    stepYieldsMain: "Hozam:", stepByproducts: "Melléktermékek:", none: "Nincs",
+    pipeCompleted: "Haladás", btnPipeReset: "Visszaállítás",
+    tooltipBestYield: "Leghatékonyabb (Legkisebb költség)", tooltipMaxYield: "Max. Melléktermék", tooltipRegionLocked: "Régiózáras",
+    tooltipMaxCraft: "Kiszámítja a maximumot a leltárból", tooltipShowAll: "Nem kapcsolódó elemek mutatása",
+    resetPrompt: "Minden érték nullázása?", restartPrompt: "Újraindítja a gyártósort?", modalActionsTitle: "Műveletek",
+    discHeader: "LOGISZTIKAI RENDELÉS", discReq: "HIÁNYZÓ KOMPONENSEK:", discStock: "Minden anyag fedezve.", discCopied: "Másolva!",
+    discMarket: "PIACI VÁSÁRLÁS:", errWebhook: "Adjon meg egy érvényes Discord URL-t.", errSend: "Küldési hiba.", sucSend: "Sikeresen elküldve!",
+    qAdd: "+10k", qAddStk: "+1 Halom", qSub: "-10k", qSubStk: "-1 Halom", byproductsTitle: "ÖSSZES MELLÉKTERMÉK", bpTitle: "ÖSSZES MELLÉKTERMÉK", btnBp: "Melléktermékek",
+    btnPrefEfficient: "Hatékony Út", btnPrefYield: "Max. Hozam", lblEfficient: "Hatékony", lblMaxYield: "Max. Hozam", lblRegionLocked: "Régiózáras",
+    chkBp: "Melléktermékek mutatása", colorAccent: "Elsődleges szín", colorBg: "Másodlagos szín", colorText: "Szövegszín", btnResetColors: "Színek alaphelyzetbe",
+    viewPers: "Személyre szabás", viewVis: "Modulok láthatósága", viewLang: "Nyelv", viewGather: "Hiányzó Komponensek", viewPipe: "Gyártósor", viewProdCmd: "Termelési Parancs", viewByproducts: "Kinyert melléktermékek",
+    btnCart: "Kosár", btnSettings: "Beállítások", btnHelp: "Súgó", btnExportCSV: "CSV Export", actDiscord: "Discord Küldés",
+    btnMaxText: "Max Gyártható Kiszámítása", maxTitle: "Határ elérve", maxAcknowledge: "Elfogad",
+    maxCraftAny: "Nem gyártható [item] a jelenlegi leltárból.", maxMissing: "A(z) [target] cél eléréséhez még hiányzik:", maxTotalCraft: "Van elég anyaga gyártani", maxCalculatedGoal: "Elegendő anyag áll rendelkezésre a célhoz.",
+    legAcronyms: "Rövidítések", legEff: "Hatékony", legYld: "Max. Hozam", legReg: "Régiózáras",
+
+    categories: { raw: "Nyersanyagok", basicExt: "Alap Extrakciók", intOre: "Köztes Ércek", advOre: "Haladó Ércek", catalyst: "Katalizátorok", refined: "Finomított Fémek", "Raw Materials": "Nyersanyagok", "Basic Extractions": "Alap Extrakciók", "Intermediate Ores": "Köztes Ércek", "Advanced Ores": "Haladó Ércek", "Catalysts": "Katalizátorok", "Refined Metals": "Finomított Fémek" },
+    items: baseItems,
+    helpHtml: helpContent['hu'],
+
+    ackBank: "Rendben", ackCart: "Rendben", ackPrefs: "Rendben", ackHelp: "Rendben", ackSettings: "Rendben",
+    searchEmptyState: "Keressen egy anyagot a gyártási részletek megtekintéséhez.", searchNotFound: "Nem található ilyen nevű anyag.",
+    tabMaterials: "Anyagok",
+    modByproductsTitle: "Kinyert melléktermékek", usesProducedFrom: "ebből készül:", usesCanMake: "ehhez használható:", usesSetTarget: "Beállítás célként", usesNone: "Nincs ismert recept vagy forrás ehhez:", usesDetails: "Részletek", usesTitle: "Anyag részletei", btnClose: "Bezárás",
+    prodCmdHint: "Válasszon anyagot a termelési terv kiszámításához.", btnOverview: "Áttekintés", btnFocus: "Fókusz", statusReady: "Kész", statusSaved: "Mentve", footerQuote: '"Az acél csatákat nyer, az ezüst háborúkat"', footerCopy: "© 2026 Készítette: [MTM] Jaegh a MERCANTORM céh számára.", resetTooltip: "Visszaállítás 10000-re"
+};

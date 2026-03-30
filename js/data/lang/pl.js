@@ -1,0 +1,48 @@
+import { baseItems } from '../langBase.js';
+import { helpContent } from '../helpContent.js';
+
+export default {
+    tabPrefs: "Preferencje", tabData: "Dane", tabHelp: "Pomoc", tabView: "Widok", tabGuide: "Przewodnik", tabLegend: "Legenda",
+    resetDesc: "Wyczyść cały ekwipunek, koszyk i cele.",
+    shareTitle: "Udostępnij / Importuj", shareDesc: "Wygeneruj kod, aby udostępnić konfigurację.",
+    btnGenCode: "Generuj i Kopiuj", btnLoadCode: "Wczytaj Kod", importSuccess: "Konfiguracja wczytana!", importError: "Nieprawidłowy kod.", exportSuccess: "Skopiowano do schowka!",
+    format: "Format Wyświetlania", optUnits: "Jednostki", optStacks: "Stosy (10k)", webhook: "URL Webhooka Discord",
+
+    btnProd: "Produkcja", prodCmdTitle: "Panel Produkcji", targetMetalLabel: "Zasób Docelowy", crafters: "Rzemieślnicy", target: "Ilość:",
+    btnAutoFill: "Wypełnij Wszystko", btnClearCart: "Wyczyść",
+    yieldMods: "Preferencje", mastery: "Mistrzostwo (+6%)", refining: "Rafinacja (+3%)", extraction: "Ekstrakcja (+3%)", prefCatModifiers: "Modyfikatory wydajności", prefCatRoute: "Trasa i wyświetlanie", prefCatWorkforce: "Siła robocza",
+
+    btnDiscord: "Kopiuj do Schowka", btnSend: "Wyślij Zamówienie na Discord",
+    btnPrefs: "Preferencje", yieldModsModal: "Preferencje",
+    btnBank: "Ekwipunek", invBankTitle: "Ekwipunek",
+    invBank: "Ekwipunek", showAllBank: "Pokaż wszystkie materiały", showAllCart: "Pokaż wszystkie materiały", btnReset: "Zresetuj Wszystko", defGather: "Brakujące Komponenty", mfgPipe: "Linia Produkcyjna", marketCart: "Koszyk Rynkowy", marketCartTitle: "Koszyk Rynkowy",
+    tblPrice: "Cena", tblBuy: "Ilość do Kupienia", tblCost: "Koszt", tblStash: "Zapas", cartTotal: "Suma Koszyka:", tblOrder: "Zamówienie",
+    noTarget: "Nie wybrano celu.", allCovered: "Ekwipunek pokrywa wszystkie materiały!", searchPlaceholder: "Szukaj...",
+    verbCrush: "Kruszenie", verbGrind: "Mielenie", verbExtract: "Ekstrakcja", verbSmelt: "Przetapianie", verbBake: "Wypalanie", verbAlloy: "Stopowanie", verbProcess: "Przetwarzanie",
+    inMachine: "w", stepWith: "z", stepAnd: "i", perCrafter: "(Na Rzemieślnika)", stepPrefix: "Krok",
+    stepYieldsMain: "Daje:", stepByproducts: "Produkty uboczne:", none: "Brak",
+    pipeCompleted: "Postęp Produkcji", btnPipeReset: "Zresetuj",
+    tooltipBestYield: "Najbardziej Wydajne (Najniższy Koszt)", tooltipMaxYield: "Maks. Produkty Uboczne", tooltipRegionLocked: "Zablokowane Regionalnie",
+    tooltipMaxCraft: "Oblicz maksimum możliwe do wytworzenia", tooltipShowAll: "Pokaż materiały niezwiązane z celem",
+    resetPrompt: "Zresetować wszystkie wartości do zera?", restartPrompt: "Zrestartować linię produkcyjną?", modalActionsTitle: "Akcje",
+    discHeader: "ZAMÓWIENIE LOGISTYCZNE", discReq: "BRAKUJĄCE KOMPONENTY:", discStock: "Wszystkie materiały pokryte.", discCopied: "Skopiowano!",
+    discMarket: "ZAKUPY NA RYNKU:", errWebhook: "Wprowadź prawidłowy URL Discord.", errSend: "Błąd wysyłania.", sucSend: "Zamówienie wysłane!",
+    qAdd: "+10k", qAddStk: "+1 Stos", qSub: "-10k", qSubStk: "-1 Stos", byproductsTitle: "SUMA PRODUKTÓW UBOCZNYCH", bpTitle: "SUMA PRODUKTÓW UBOCZNYCH", btnBp: "Produkty uboczne",
+    btnPrefEfficient: "Ścieżka Wydajna", btnPrefYield: "Maksymalny Zysk", lblEfficient: "Wydajny", lblMaxYield: "Maks. Zysk", lblRegionLocked: "Zablokowane Reg.",
+    chkBp: "Pokaż produkty uboczne", colorAccent: "Kolor Główny", colorBg: "Kolor Drugorzędny", colorText: "Kolor Tekstu", btnResetColors: "Zresetuj Kolory",
+    viewPers: "Personalizacja", viewVis: "Widoczność Modułów", viewLang: "Język", viewGather: "Brakujące Komponenty", viewPipe: "Linia Produkcyjna", viewProdCmd: "Panel Produkcji", viewByproducts: "Odzyskane produkty uboczne",
+    btnCart: "Koszyk", btnSettings: "Ustawienia", btnHelp: "Pomoc", btnExportCSV: "Eksportuj CSV", actDiscord: "Wysyłka Discord",
+    btnMaxText: "Oblicz Maks. do Wytworzenia", maxTitle: "Osiągnięto Limit", maxAcknowledge: "Potwierdź",
+    maxCraftAny: "Nie można wytworzyć [item] z obecnym ekwipunkiem.", maxMissing: "Aby osiągnąć cel [target], brakuje:", maxTotalCraft: "Masz materiały na", maxCalculatedGoal: "Masz wystarczająco dużo materiałów.",
+    legAcronyms: "Akronimy", legEff: "Wydajny", legYld: "Maks. Zysk", legReg: "Zablokowane Reg.",
+
+    categories: { raw: "Surowce", basicExt: "Podstawowe Ekstrakcje", intOre: "Rudy Pośrednie", advOre: "Rudy Zaawansowane", catalyst: "Katalizatory", refined: "Rafinowane Metale", "Raw Materials": "Surowce", "Basic Extractions": "Podstawowe Ekstrakcje", "Intermediate Ores": "Rudy Pośrednie", "Advanced Ores": "Rudy Zaawansowane", "Catalysts": "Katalizatory", "Refined Metals": "Rafinowane Metale" },
+    items: baseItems,
+    helpHtml: helpContent['pl'],
+
+    ackBank: "Potwierdź", ackCart: "Potwierdź", ackPrefs: "Potwierdź", ackHelp: "Potwierdź", ackSettings: "Potwierdź",
+    searchEmptyState: "Wyszukaj materiał, aby zobaczyć szczegóły produkcji.", searchNotFound: "Nie znaleziono materiału o tej nazwie.",
+    tabMaterials: "Materiały",
+    modByproductsTitle: "Odzyskane produkty uboczne", usesProducedFrom: "jest wytwarzany z:", usesCanMake: "można użyć do zrobienia:", usesSetTarget: "Ustaw jako cel", usesNone: "Brak znanych przepisów lub źródeł dla", usesDetails: "Szczegóły", usesTitle: "Szczegóły materiału", btnClose: "Zamknij",
+    prodCmdHint: "Wybierz materiał, aby obliczyć plan produkcji.", btnOverview: "Przegląd", btnFocus: "Skupienie", statusReady: "Gotowe", statusSaved: "Zapisano", footerQuote: '"Stal wygrywa bitwy, srebro wygrywa wojny"', footerCopy: "© 2026 Stworzone przez [MTM] Jaegh dla gildii MERCANTORM.", resetTooltip: "Resetuj do 10000"
+};

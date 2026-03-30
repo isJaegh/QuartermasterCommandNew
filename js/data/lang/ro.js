@@ -1,0 +1,48 @@
+import { baseItems } from '../langBase.js';
+import { helpContent } from '../helpContent.js';
+
+export default {
+    tabPrefs: "Preferințe", tabData: "Date", tabHelp: "Ajutor", tabView: "Vizualizare", tabGuide: "Ghid", tabLegend: "Legendă",
+    resetDesc: "Ștergeți tot inventarul salvat, cantitățile din coș și obiectivele.",
+    shareTitle: "Partajare / Import Configurare", shareDesc: "Generați un cod pentru a partaja configurarea sau introduceți unul.",
+    btnGenCode: "Generare și Copiere", btnLoadCode: "Încărcare Cod", importSuccess: "Configurare încărcată cu succes!", importError: "Cod invalid.", exportSuccess: "Copiat în clipboard!",
+    format: "Format Afișare", optUnits: "Unități", optStacks: "Stive (10k)", webhook: "URL Webhook Discord",
+
+    btnProd: "Producție", prodCmdTitle: "Comandă Producție", targetMetalLabel: "Resursă Țintă", crafters: "Artizani", target: "Cantitate:",
+    btnAutoFill: "Umple Tot", btnClearCart: "Golire",
+    yieldMods: "Preferințe", mastery: "Măiestrie (+6%)", refining: "Rafinare (+3%)", extraction: "Extracție (+3%)", prefCatModifiers: "Modificatori de randament", prefCatRoute: "Rută și afișare", prefCatWorkforce: "Forță de muncă",
+
+    btnDiscord: "Copiere în Clipboard", btnSend: "Trimitere Comandă pe Discord",
+    btnPrefs: "Preferințe", yieldModsModal: "Preferințe",
+    btnBank: "Inventar", invBankTitle: "Inventar",
+    invBank: "Inventar", showAllBank: "Afișare toate materialele", showAllCart: "Afișare toate materialele", btnReset: "Resetare Totală", defGather: "Componente Lipsă", mfgPipe: "Linie de Fabricație", marketCart: "Coș Piață", marketCartTitle: "Coș Piață",
+    tblPrice: "Preț", tblBuy: "Cantitate de Cumpărat", tblCost: "Cost", tblStash: "Stoc", cartTotal: "Total Coș:", tblOrder: "Comandă",
+    noTarget: "Niciun obiectiv setat.", allCovered: "Inventarul și Coșul acoperă toate materialele!", searchPlaceholder: "Căutare...",
+    verbCrush: "Zdrobește", verbGrind: "Macină", verbExtract: "Extrage", verbSmelt: "Topește", verbBake: "Coace", verbAlloy: "Aliază", verbProcess: "Procesează",
+    inMachine: "în", stepWith: "cu", stepAnd: "și", perCrafter: "(Per Artizan)", stepPrefix: "Pasul",
+    stepYieldsMain: "Produce:", stepByproducts: "Subproduse:", none: "Nimic",
+    pipeCompleted: "Progres Producție", btnPipeReset: "Resetare",
+    tooltipBestYield: "Cel mai eficient (Cost minim materiale)", tooltipMaxYield: "Max. Subproduse Generate", tooltipRegionLocked: "Blocat Regional",
+    tooltipMaxCraft: "Calculați cât puteți produce cu inventarul", tooltipShowAll: "Afișare elemente necorelate",
+    resetPrompt: "Resetați toate valorile la zero?", restartPrompt: "Reporniți linia de producție?", modalActionsTitle: "Acțiuni",
+    discHeader: "COMANDĂ LOGISTICĂ", discReq: "COMPONENTE LIPSĂ:", discStock: "Toate materialele acoperite.", discCopied: "Copiat!",
+    discMarket: "CUMPĂRĂTURI PIAȚĂ:", errWebhook: "Introduceți un URL Discord valid.", errSend: "Eroare la trimitere.", sucSend: "Comandă trimisă pe Discord!",
+    qAdd: "+10k", qAddStk: "+1 Stivă", qSub: "-10k", qSubStk: "-1 Stivă", byproductsTitle: "TOTAL SUBPRODUSE", bpTitle: "TOTAL SUBPRODUSE", btnBp: "Subproduse",
+    btnPrefEfficient: "Cale Eficientă", btnPrefYield: "Randament Max", lblEfficient: "Eficient", lblMaxYield: "Randament Max", lblRegionLocked: "Blocat Regional",
+    chkBp: "Afișare subproduse", colorAccent: "Culoare Primară", colorBg: "Culoare Secundară", colorText: "Culoare Text", btnResetColors: "Resetare Culori",
+    viewPers: "Personalizare", viewVis: "Vizibilitate Module", viewLang: "Limbă", viewGather: "Componente Lipsă", viewPipe: "Linie de Fabricație", viewProdCmd: "Comandă Producție", viewByproducts: "Produse secundare recuperate",
+    btnCart: "Coș", btnSettings: "Setări", btnHelp: "Ajutor", btnExportCSV: "Export CSV", actDiscord: "Expediere Discord",
+    btnMaxText: "Calculare Max Productibil", maxTitle: "Limită de Producție Atingută", maxAcknowledge: "Confirmare",
+    maxCraftAny: "Nu se poate produce [item] cu inventarul curent.", maxMissing: "Pentru a atinge obiectivul de [target], lipsesc:", maxTotalCraft: "Aveți materiale pentru", maxCalculatedGoal: "Aveți destul pentru obiectiv.",
+    legAcronyms: "Acronime", legEff: "Eficient", legYld: "Randament Max", legReg: "Blocat Regional",
+
+    categories: { raw: "Materii Prime", basicExt: "Extracții de Bază", intOre: "Minereuri Intermediare", advOre: "Minereuri Avansate", catalyst: "Catalizatori", refined: "Metale Rafinate", "Raw Materials": "Materii Prime", "Basic Extractions": "Extracții de Bază", "Intermediate Ores": "Minereuri Intermediare", "Advanced Ores": "Minereuri Avansate", "Catalysts": "Catalizatori", "Refined Metals": "Metale Rafinate" },
+    items: baseItems,
+    helpHtml: helpContent['ro'],
+
+    ackBank: "Confirmă", ackCart: "Confirmă", ackPrefs: "Confirmă", ackHelp: "Confirmă", ackSettings: "Confirmă",
+    searchEmptyState: "Căutați un material pentru a vedea detaliile de producție.", searchNotFound: "Niciun material găsit cu acest nume.",
+    tabMaterials: "Materiale",
+    modByproductsTitle: "Produse secundare recuperate", usesProducedFrom: "este produs din:", usesCanMake: "poate fi folosit pentru a face:", usesSetTarget: "Setați ca țintă", usesNone: "Nu există rețete sau surse cunoscute pentru", usesDetails: "Detalii", usesTitle: "Detalii material", btnClose: "Închide",
+    prodCmdHint: "Selectați un material pentru a vă calcula planul de producție.", btnOverview: "Prezentare generală", btnFocus: "Focus", statusReady: "Pregătit", statusSaved: "Salvat", footerQuote: '"Oțelul câștigă bătălii, argintul câștigă războaie"', footerCopy: "© 2026 Creat de [MTM] Jaegh pentru breasla MERCANTORM.", resetTooltip: "Resetați la 10000"
+};

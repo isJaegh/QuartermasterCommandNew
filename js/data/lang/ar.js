@@ -1,0 +1,48 @@
+import { baseItems } from '../langBase.js';
+import { helpContent } from '../helpContent.js';
+
+export default {
+    tabPrefs: "التفضيلات", tabData: "بيانات", tabHelp: "مساعدة", tabView: "عرض", tabGuide: "دليل", tabLegend: "مفتاح الرموز",
+    resetDesc: "مسح جميع المخزونات المحفوظة، وكميات سلة السوق، والأهداف.",
+    shareTitle: "مشاركة / استيراد الإعداد", shareDesc: "قم بإنشاء رمز لمشاركة إعدادك الحالي، أو الصق رمزًا لتحميل إعداد آخر.",
+    btnGenCode: "إنشاء ونسخ", btnLoadCode: "تحميل الرمز", importSuccess: "تم التحميل بنجاح!", importError: "رمز غير صالح.", exportSuccess: "تم النسخ!",
+    format: "تنسيق العرض", optUnits: "وحدات", optStacks: "رزم (10k)", webhook: "رابط Discord Webhook",
+
+    btnProd: "الإنتاج", prodCmdTitle: "أمر الإنتاج", targetMetalLabel: "المورد الهدف", crafters: "الحرفيون", target: "الكمية:",
+    btnAutoFill: "ملء الكل", btnClearCart: "مسح",
+    yieldMods: "التفضيلات", mastery: "إتقان (+6%)", refining: "تكرير (+3%)", extraction: "استخراج (+3%)", prefCatModifiers: "معدلات الإنتاج", prefCatRoute: "المسار والعرض", prefCatWorkforce: "القوى العاملة",
+
+    btnDiscord: "نسخ إلى الحافظة", btnSend: "إرسال الطلب إلى Discord",
+    btnPrefs: "التفضيلات", yieldModsModal: "التفضيلات",
+    btnBank: "المخزون", invBankTitle: "المخزون",
+    invBank: "المخزون", showAllBank: "إظهار كل المواد", showAllCart: "إظهار كل المواد", btnReset: "إعادة ضبط الكل", defGather: "المكونات المفقودة", mfgPipe: "خط التصنيع", marketCart: "سلة السوق", marketCartTitle: "سلة السوق",
+    tblPrice: "السعر", tblBuy: "كمية الشراء", tblCost: "التكلفة", tblStash: "المخزون", cartTotal: "إجمالي السلة:", tblOrder: "الطلب",
+    noTarget: "لم يتم تحديد هدف.", allCovered: "المخزون يغطي جميع المواد المطلوبة!", searchPlaceholder: "بحث...",
+    verbCrush: "سحق", verbGrind: "طحن", verbExtract: "استخراج", verbSmelt: "صهر", verbBake: "خبز", verbAlloy: "سبك", verbProcess: "معالجة",
+    inMachine: "في", stepWith: "مع", stepAnd: "و", perCrafter: "(لكل حرفي)", stepPrefix: "خطوة",
+    stepYieldsMain: "الإنتاج:", stepByproducts: "النواتج الثانوية:", none: "لا يوجد",
+    pipeCompleted: "تقدم الإنتاج", btnPipeReset: "إعادة ضبط",
+    tooltipBestYield: "الأكثر كفاءة (أقل تكلفة مواد)", tooltipMaxYield: "أقصى نواتج ثانوية", tooltipRegionLocked: "مخصص للمنطقة",
+    tooltipMaxCraft: "احسب الحد الأقصى الذي يمكنك صنعه", tooltipShowAll: "إظهار العناصر غير المرتبطة بالهدف",
+    resetPrompt: "هل تريد إعادة ضبط جميع القيم إلى الصفر؟", restartPrompt: "هل تريد إعادة تشغيل خط الإنتاج؟", modalActionsTitle: "إجراءات الخط",
+    discHeader: "طلب لوجستي", discReq: "المكونات المفقودة:", discStock: "المواد متوفرة.", discCopied: "تم النسخ!",
+    discMarket: "مشتريات السوق:", errWebhook: "يرجى إدخال رابط Discord صحيح.", errSend: "فشل الإرسال.", sucSend: "تم إرسال الطلب إلى Discord!",
+    qAdd: "+10k", qAddStk: "+1 رزمة", qSub: "-10k", qSubStk: "-1 رزمة", byproductsTitle: "إجمالي النواتج الثانوية", bpTitle: "إجمالي النواتج", btnBp: "نواتج ثانوية",
+    btnPrefEfficient: "المسار الفعال", btnPrefYield: "أقصى إنتاج", lblEfficient: "فعال", lblMaxYield: "أقصى إنتاج", lblRegionLocked: "مخصص للمنطقة",
+    chkBp: "إظهار النواتج الثانوية", colorAccent: "اللون الأساسي", colorBg: "اللون الثانوي", colorText: "لون النص", btnResetColors: "إعادة ضبط الألوان",
+    viewPers: "تخصيص", viewVis: "رؤية الوحدات", viewLang: "اللغة", viewGather: "المكونات المفقودة", viewPipe: "خط التصنيع", viewProdCmd: "أمر الإنتاج", viewByproducts: "المنتجات الثانوية المستردة",
+    btnCart: "السلة", btnSettings: "الإعدادات", btnHelp: "مساعدة", btnExportCSV: "تصدير CSV", actDiscord: "إرسال Discord",
+    btnMaxText: "حساب الحد الأقصى للإنتاج", maxTitle: "تم الوصول للحد", maxAcknowledge: "تأكيد",
+    maxCraftAny: "لا يمكنك صنع [item] بالمخزون الحالي.", maxMissing: "للوصول إلى هدفك [target]، ما زلت تحتاج إلى:", maxTotalCraft: "لديك مواد كافية لصنع", maxCalculatedGoal: "لديك ما يكفي للوصول للهدف.",
+    legAcronyms: "اختصارات", legEff: "فعال", legYld: "أقصى إنتاج", legReg: "مخصص للمنطقة",
+
+    categories: { raw: "مواد خام", basicExt: "استخراج أساسي", intOre: "خامات متوسطة", advOre: "خامات متقدمة", catalyst: "محفزات", refined: "معادن مكررة", "Raw Materials": "مواد خام", "Basic Extractions": "استخراج أساسي", "Intermediate Ores": "خامات متوسطة", "Advanced Ores": "خامات متقدمة", "Catalysts": "محفزات", "Refined Metals": "معادن مكررة" },
+    items: baseItems,
+    helpHtml: helpContent['ar'],
+
+    ackBank: "تأكيد", ackCart: "تأكيد", ackPrefs: "تأكيد", ackHelp: "تأكيد", ackSettings: "تأكيد",
+    searchEmptyState: "ابحث عن مادة لعرض تفاصيل الإنتاج.", searchNotFound: "لم يتم العثور على مادة بهذا الاسم.",
+    tabMaterials: "المواد",
+    modByproductsTitle: "المنتجات الثانوية المستردة", usesProducedFrom: "يتم إنتاجه من:", usesCanMake: "يمكن استخدامه لصنع:", usesSetTarget: "تعيين كهدف", usesNone: "لا توجد وصفات أو مصادر معروفة لـ", usesDetails: "تفاصيل", usesTitle: "تفاصيل المادة", btnClose: "إغلاق",
+    prodCmdHint: "حدد مادة لحساب خطة الإنتاج الخاصة بك.", btnOverview: "نظرة عامة", btnFocus: "تركيز", statusReady: "جاهز", statusSaved: "تم الحفظ", footerQuote: '"الصلب يكسب المعارك، والفضة تكسب الحروب"', footerCopy: "© 2026 تم الإنشاء بواسطة [MTM] Jaegh لنقابة MERCANTORM.", resetTooltip: "إعادة تعيين إلى 10000"
+};
