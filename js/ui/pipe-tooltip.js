@@ -56,7 +56,13 @@ export function initPipeTooltip() {
         if (!step) return;
         const hoveredRoute = btn.dataset.route || '';
         const html = buildPipeDiffHTML(step, hoveredRoute);
-        if (!html) return;
+        
+        // If html is empty (e.g. hovering the active machine), hide the tip
+        if (!html) {
+            tip.style.display = 'none';
+            return;
+        }
+        
         tip.innerHTML = html;
         tip.style.display = 'block';
         positionTip(e.clientX, e.clientY);
@@ -154,7 +160,6 @@ export function buildPipeTipHTML(step) {
 
 // ─── Per-machine diff tooltip ─────────────────────────────────────────────────
 // Shows the hovered machine vs the currently selected machine.
-// If hovering the selected machine, shows its full yields as the baseline.
 
 export function buildPipeDiffHTML(step, hoveredRouteName) {
     const routes = step.routeStats || [];
@@ -181,6 +186,11 @@ export function buildPipeDiffHTML(step, hoveredRouteName) {
     const hovMachine = hoveredR.name.split(' (')[0];
     const selMachine = selectedR ? selectedR.name.split(' (')[0] : '';
     const isActive   = hoveredR.name === step.selectedRoute;
+
+    // ── Hovering the ACTIVE machine: Return nothing so no tooltip renders ──────
+    if (isActive) {
+        return '';
+    }
 
     // Compute per-item yields for a route stats entry
     function computeYields(r) {
@@ -218,35 +228,6 @@ export function buildPipeDiffHTML(step, hoveredRouteName) {
     }
 
     let html = `<div class="chart-tip-title">${sourceName}</div>`;
-
-    // ── Hovering the ACTIVE machine: show its full yields as baseline ──────────
-    if (isActive) {
-        html += `<div class="chart-tip-route chart-tip-selected">`;
-        html += `<div class="chart-tip-machine">\u2713 <strong>${hovMachine}</strong>${badges(hoveredR)}${catHtml(hoveredR)}</div>`;
-
-        if (hovYields) {
-            if (hovYields.mainItems.length) {
-                html += `<div class="chart-tip-section-label">Main yields:</div>`;
-                hovYields.mainItems.forEach(it => {
-                    html += `<div class="chart-tip-item chart-tip-main"><span>${it.name}</span><span>${it.amount.toLocaleString()}</span></div>`;
-                });
-            }
-            if (hovYields.bpItems.length) {
-                html += `<div class="chart-tip-section-label">Byproducts:</div>`;
-                hovYields.bpItems.forEach(it => {
-                    html += `<div class="chart-tip-item chart-tip-bp"><span>${it.name}</span><span>${it.amount.toLocaleString()}</span></div>`;
-                });
-            }
-        } else if (step.mainYields?.length) {
-            // Recipe step fallback
-            html += `<div class="chart-tip-section-label">Output:</div>`;
-            step.mainYields.forEach(y => {
-                html += `<div class="chart-tip-item chart-tip-main"><span>${getItemName(y.item, t)}</span><span>${y.amount.toLocaleString()}</span></div>`;
-            });
-        }
-        html += `</div>`;
-        return html;
-    }
 
     // ── Hovering a DIFFERENT machine: show diffs vs selected ──────────────────
     const vsLabel = selMachine ? `<span class="chart-tip-vs">vs \u2713 ${selMachine}</span>` : '';

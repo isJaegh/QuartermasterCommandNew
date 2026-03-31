@@ -9,16 +9,43 @@ import { openModal } from './modals.js';
 import { EXTRACTION_ROUTES } from '../data/data.js';
 import { openBottomSheet } from './bottom-sheet.js';
 
-const NODE_W  = 170;
-const NODE_H  = 58;
-const COL_GAP = 200;   // horizontal space between node right-edge and next node left-edge
-const ROW_GAP = 30;    // vertical gap between node bottom and next node top
+const NODE_W = 170;
+const NODE_H = 58;
+const COL_GAP = 180;
+const ROW_GAP = 40;
 
 // ─── Public entry point ──────────────────────────────────────────────────────
 
 export function openChartModal() {
     openModal('chartModal');
 
+    const chkChartBp = document.getElementById('chkChartBp');
+    const chkChartSubBp = document.getElementById('chkChartSubBp');
+    const lblChartSubBp = document.getElementById('lblChartSubBp');
+
+    if (chkChartBp && !chkChartBp.dataset.bound) {
+        chkChartBp.addEventListener('change', (e) => {
+            if (chkChartSubBp) chkChartSubBp.disabled = !e.target.checked;
+            if (!e.target.checked) {
+                if (chkChartSubBp) chkChartSubBp.checked = false;
+                if (lblChartSubBp) lblChartSubBp.style.opacity = '0.4';
+            } else {
+                if (lblChartSubBp) lblChartSubBp.style.opacity = '1';
+            }
+            refreshChart();
+        });
+        chkChartBp.dataset.bound = "true";
+    }
+
+    if (chkChartSubBp && !chkChartSubBp.dataset.bound) {
+        chkChartSubBp.addEventListener('change', refreshChart);
+        chkChartSubBp.dataset.bound = "true";
+    }
+
+    refreshChart();
+}
+
+function refreshChart() {
     const wrapper = document.getElementById('chartSvgWrapper');
     if (!wrapper) return;
     wrapper.innerHTML = '';
@@ -32,27 +59,22 @@ export function openChartModal() {
     const t = i18n[state.currentLang] || i18n['en'];
     const mE = document.getElementById('modExt')?.checked ? 1.03 : 1;
     const mM = document.getElementById('modMast')?.checked ? 1.06 : 1;
-    const { nodes, edges } = buildChartData(steps, t, mE, mM);
+
+    const showBp = document.getElementById('chkChartBp')?.checked ?? true;
+    const showSubBp = document.getElementById('chkChartSubBp')?.checked ?? true;
+
+    const { nodes, edges } = buildChartData(steps, t, mE, mM, showBp, showSubBp);
     assignLayout(nodes, edges);
     renderSVG(wrapper, nodes, edges);
 }
 
 // ─── Data transformation ─────────────────────────────────────────────────────
 
-function buildChartData(steps, t, mE, mM) {
+function buildChartData(steps, t, mE, mM, showBp, showSubBp) {
     const nodes = [];
     const edges = [];
-
-    // Maps item key → the most-recently-created output node id for that item
     const itemNodeMap = {};
 
-    // Collect all item keys that appear as outputs of some step
-    const allOutputItems = new Set();
-    steps.forEach(step => {
-        (step.mainYields || []).forEach(y => allOutputItems.add(y.item));
-    });
-
-    // Also track the final target (last mainYield of the last step)
     const lastStep = steps[steps.length - 1];
     const targetItem = lastStep && lastStep.mainYields && lastStep.mainYields.length > 0
         ? lastStep.mainYields[lastStep.mainYields.length - 1].item
@@ -65,129 +87,94 @@ function buildChartData(steps, t, mE, mM) {
         if (!step.inputs || step.inputs.length === 0) return;
 
         const machineName = (step.selectedRoute || '').split(' (')[0];
-
-        // Build tooltip data for this step's route comparison
         const tooltipData = buildTooltipData(step, t, mE, mM);
 
-        // Resolve or create input nodes
         const resolvedInputIds = step.inputs.map(inp => {
             if (itemNodeMap[inp.item] !== undefined) {
                 return itemNodeMap[inp.item];
             }
-            // Raw material — not produced by any earlier step
             const nodeId = makeId();
             nodes.push({
-                id: nodeId,
-                item: inp.item,
-                amount: inp.amount,
-                label: getItemName(inp.item, t),
-                type: 'raw',
-                col: 0,
-                row: 0
+                id: nodeId, item: inp.item, amount: inp.amount,
+                label: getItemName(inp.item, t), type: 'raw', col: 0, row: 0
             });
             itemNodeMap[inp.item] = nodeId;
             return nodeId;
         });
 
-        // Create output nodes (mainYields)
         const outputIds = [];
         (step.mainYields || []).forEach(y => {
             const nodeId = makeId();
             const isTarget = (y.item === targetItem && stepIndex === steps.length - 1);
             nodes.push({
-                id: nodeId,
-                item: y.item,
-                amount: y.amount,
-                label: getItemName(y.item, t),
-                type: isTarget ? 'target' : 'main',
-                col: 0,
-                row: 0
+                id: nodeId, item: y.item, amount: y.amount,
+                label: getItemName(y.item, t), type: isTarget ? 'target' : 'main', col: 0, row: 0
             });
             itemNodeMap[y.item] = nodeId;
             outputIds.push(nodeId);
         });
 
-        // Edges: each input → each output (label = machine)
-        // Only draw label on the primary input edge; catalyst inputs get unlabelled edges
         resolvedInputIds.forEach((fromId, idx) => {
             outputIds.forEach(toId => {
                 edges.push({
-                    fromId,
-                    toId,
-                    label: idx === 0 ? machineName : '',
-                    isByproduct: false,
-                    tooltipData: idx === 0 ? tooltipData : null
+                    fromId, toId, label: idx === 0 ? machineName : '',
+                    isByproduct: false, tooltipData: idx === 0 ? tooltipData : null
                 });
             });
         });
 
-        // Byproduct nodes — branch from the PRIMARY INPUT node, same as the main output edge.
-        // This makes it visually clear that the machine converts the input into both the
-        // main output AND all byproducts before any downstream branching occurs.
-        const bpSourceId = resolvedInputIds.length > 0 ? resolvedInputIds[0] : (outputIds[0] || null);
-        (step.byproducts || []).forEach(y => {
-            const bpNodeId = makeId();
-            nodes.push({
-                id: bpNodeId,
-                item: y.item,
-                amount: y.amount,
-                label: getItemName(y.item, t),
-                type: 'byproduct',
-                col: 0,
-                row: 0,
-                bpSourceId
-            });
-            // Don't overwrite itemNodeMap for byproducts — the item may appear
-            // elsewhere in the main chain with a different amount
-            edges.push({
-                fromId: bpSourceId,
-                toId: bpNodeId,
-                label: machineName,
-                isByproduct: true,
-                tooltipData
-            });
+        if (showBp) {
+            const bpSourceId = resolvedInputIds.length > 0 ? resolvedInputIds[0] : (outputIds[0] || null);
+            (step.byproducts || []).forEach(y => {
+                const bpNodeId = makeId();
+                nodes.push({
+                    id: bpNodeId, item: y.item, amount: y.amount,
+                    label: getItemName(y.item, t), type: 'byproduct', col: 0, row: 0, bpSourceId
+                });
 
-            // ── Downstream expansion: what can this byproduct produce? ──
-            const downRoutes = EXTRACTION_ROUTES[y.item];
-            if (downRoutes) {
-                const downStats = buildDownstreamRouteStats(y.item, y.amount, mE, mM, downRoutes);
-                const chosenName = pickRoute(downStats, state.globalRoutePref);
-                if (chosenName) {
-                    const chosenRoute = downRoutes[chosenName];
-                    const downMachine = chosenName.split(' (')[0];
-                    const downTooltip = buildTooltipDataFromStats(
-                        getItemName(y.item, t), y.item, y.amount, downStats, chosenName, downRoutes, t, mE, mM
-                    );
+                // Exclude tooltip from the immediate byproduct edges
+                edges.push({
+                    fromId: bpSourceId, toId: bpNodeId,
+                    label: '',
+                    isByproduct: true,
+                    tooltipData: null
+                });
 
-                    Object.entries(chosenRoute.yields).forEach(([outItem, yRate]) => {
-                        const mod = (outItem === 'bo' && chosenRoute.action !== 'stepFurnace' && chosenRoute.action !== 'stepBlastFurnace')
-                            ? mE * mM : mE;
-                        const outAmount = Math.floor(y.amount * yRate * mod);
-                        if (outAmount <= 0) return;
+                if (showSubBp) {
+                    const downRoutes = EXTRACTION_ROUTES[y.item];
+                    if (downRoutes) {
+                        const downStats = buildDownstreamRouteStats(y.item, y.amount, mE, mM, downRoutes);
+                        const chosenName = pickRoute(downStats, state.globalRoutePref);
 
-                        const dsNodeId = makeId();
-                        nodes.push({
-                            id: dsNodeId,
-                            item: outItem,
-                            amount: outAmount,
-                            label: getItemName(outItem, t),
-                            type: 'downstream',
-                            col: 0,
-                            row: 0,
-                            bpParentId: bpNodeId
-                        });
-                        edges.push({
-                            fromId: bpNodeId,
-                            toId: dsNodeId,
-                            label: downMachine,
-                            isByproduct: true,
-                            isDownstream: true,
-                            tooltipData: downTooltip
-                        });
-                    });
+                        if (chosenName) {
+                            const chosenRoute = downRoutes[chosenName];
+                            const downMachine = chosenName.split(' (')[0];
+
+                            const downTooltip = buildTooltipDataFromStats(
+                                getItemName(y.item, t), y.amount, downStats, chosenName, downRoutes, t, mE, mM
+                            );
+
+                            Object.entries(chosenRoute.yields).forEach(([outItem, yRate]) => {
+                                const mod = (outItem === 'bo' && chosenRoute.action !== 'stepFurnace' && chosenRoute.action !== 'stepBlastFurnace') ? mE * mM : mE;
+                                const outAmount = Math.floor(y.amount * yRate * mod);
+                                if (outAmount <= 0) return;
+
+                                const dsNodeId = makeId();
+                                nodes.push({
+                                    id: dsNodeId, item: outItem, amount: outAmount,
+                                    label: getItemName(outItem, t), type: 'downstream', col: 0, row: 0, bpParentId: bpNodeId
+                                });
+
+                                edges.push({
+                                    fromId: bpNodeId, toId: dsNodeId, label: downMachine,
+                                    isByproduct: true, isDownstream: true, tooltipData: downTooltip
+                                });
+                            });
+                        }
+                    }
                 }
-            }
-        });
+            });
+        }
     });
 
     return { nodes, edges };
@@ -204,8 +191,7 @@ function buildDownstreamRouteStats(item, amount, mE, mM, routes) {
         const totalCost = amount + catCost;
         let totalByproducts = 0;
         Object.entries(r.yields).forEach(([yItem, yRate]) => {
-            const mod = (yItem === 'bo' && r.action !== 'stepFurnace' && r.action !== 'stepBlastFurnace')
-                ? mE * mM : mE;
+            const mod = (yItem === 'bo' && r.action !== 'stepFurnace' && r.action !== 'stepBlastFurnace') ? mE * mM : mE;
             totalByproducts += Math.floor(amount * yRate * mod);
         });
         return { name: rName, req: amount, catCost, totalCost, totalByproducts, isRegionLocked, isBestYield: false, isMaxYield: false };
@@ -213,10 +199,10 @@ function buildDownstreamRouteStats(item, amount, mE, mM, routes) {
 
     if (stats.length > 0) {
         const minCost = Math.min(...stats.map(s => s.totalCost));
-        const maxBp   = Math.max(...stats.map(s => s.totalByproducts));
+        const maxBp = Math.max(...stats.map(s => s.totalByproducts));
         stats.forEach(s => {
             s.isBestYield = s.totalCost === minCost;
-            s.isMaxYield  = s.totalByproducts === maxBp && maxBp > 0;
+            s.isMaxYield = s.totalByproducts === maxBp && maxBp > 0;
         });
     }
     return stats;
@@ -232,46 +218,52 @@ function pickRoute(stats, pref) {
     return best ? best.name : stats[0].name;
 }
 
-function buildTooltipDataFromStats(sourceName, sourceItem, sourceAmount, rows, selectedRoute, allRoutes, t, mE, mM) {
+function buildTooltipDataFromStats(sourceName, sourceAmount, rows, selectedRoute, allRoutes, t, mE, mM) {
     if (!rows || rows.length === 0) return null;
 
-    // For downstream, all yields are "byproducts" from the downstream source perspective
-    // We treat everything as byproducts since there's no main extraction goal here
-    const mappedRows = rows.map(r => {
+    let activeIdx = rows.findIndex(r => r.name === selectedRoute);
+    if (activeIdx === -1) activeIdx = 0;
+
+    const mappedRoutes = rows.map((r, idx) => {
         const badges = [];
         if (r.isBestYield) badges.push({ label: 'E', cls: 'tip-badge-eff' });
         if (r.isMaxYield && !r.isBestYield) badges.push({ label: 'Y', cls: 'tip-badge-max' });
         if (r.isRegionLocked) badges.push({ label: 'R', cls: 'tip-badge-reg' });
 
         const rd = allRoutes?.[r.name];
-        const mainItems = [];
+        const reqAmt = r.req || sourceAmount;
         const bpItems = [];
 
         if (rd) {
             Object.entries(rd.yields).forEach(([yItem, yRate]) => {
-                const mod = (yItem === 'bo' && rd.action !== 'stepFurnace' && rd.action !== 'stepBlastFurnace')
-                    ? mE * mM : mE;
-                const amt = Math.floor(sourceAmount * yRate * mod);
-                // All yields treated as byproducts for downstream nodes
+                const mod = (yItem === 'bo' && rd.action !== 'stepFurnace' && rd.action !== 'stepBlastFurnace') ? mE * mM : mE;
+                const amt = Math.floor(reqAmt * yRate * mod);
                 bpItems.push({ key: yItem, name: getItemName(yItem, t), amount: amt });
             });
         }
 
         return {
+            name: r.name,
             machine: r.name.split(' (')[0],
-            isSelected: r.name === selectedRoute,
+            isSelected: idx === activeIdx,
             badges,
-            mainItems,
-            bpItems,
             catCost: r.catCost || 0,
-            catItem: rd?.cat || null
+            catItem: rd?.cat ? getItemName(rd.cat, t) : null,
+            reqAmt,
+            mainItems: [],
+            bpItems
         };
     });
 
-    return { title: sourceName, rows: mappedRows };
+    return {
+        stepKey: null, // Readonly marker
+        title: sourceName,
+        activeIdx,
+        routes: mappedRoutes
+    };
 }
 
-// ─── Tooltip data builder ─────────────────────────────────────────────────────
+// ─── Interactive Route Selection Tooltip builder ──────────────────────────────
 
 function buildTooltipData(step, t, mE, mM) {
     const routes = step.routeStats || [];
@@ -285,253 +277,221 @@ function buildTooltipData(step, t, mE, mM) {
     const extractionRoutes = step.source ? EXTRACTION_ROUTES[step.source] : null;
     const mainYieldKeys = new Set((step.mainYields || []).map(y => y.item));
 
-    const rows = routes.map(r => {
+    let activeIdx = routes.findIndex(r => r.name === step.selectedRoute);
+    if (activeIdx === -1) activeIdx = 0;
+
+    const mappedRoutes = routes.map((r, idx) => {
         const badges = [];
         if (r.isBestYield) badges.push({ label: 'E', cls: 'tip-badge-eff' });
         if (r.isMaxYield && !r.isBestYield) badges.push({ label: 'Y', cls: 'tip-badge-max' });
         if (r.isRegionLocked) badges.push({ label: 'R', cls: 'tip-badge-reg' });
 
-        const mainItems = [];
-        const bpItems = [];
-
         const rd = extractionRoutes?.[r.name];
+        const reqAmt = r.req || sourceAmount;
+        const mainItems = [], bpItems = [];
+
         if (rd) {
             Object.entries(rd.yields).forEach(([yItem, yRate]) => {
-                const mod = (yItem === 'bo' && rd.action !== 'stepFurnace' && rd.action !== 'stepBlastFurnace')
-                    ? mE * mM : mE;
-                const amt = Math.floor(sourceAmount * yRate * mod);
+                const mod = (yItem === 'bo' && rd.action !== 'stepFurnace' && rd.action !== 'stepBlastFurnace') ? mE * mM : mE;
+                const amt = Math.floor(reqAmt * yRate * mod);
                 const entry = { key: yItem, name: getItemName(yItem, t), amount: amt };
                 if (mainYieldKeys.has(yItem)) mainItems.push(entry);
                 else bpItems.push(entry);
             });
         } else {
-            // Recipe step — show main output only
             (step.mainYields || []).forEach(y => {
                 mainItems.push({ key: y.item, name: getItemName(y.item, t), amount: y.amount });
             });
         }
 
         return {
+            name: r.name,
             machine: r.name.split(' (')[0],
-            isSelected: r.name === step.selectedRoute,
+            isSelected: idx === activeIdx,
             badges,
-            mainItems,
-            bpItems,
             catCost: r.catCost || 0,
-            catItem: rd?.cat || null
+            catItem: rd?.cat ? getItemName(rd.cat, t) : null,
+            reqAmt,
+            mainItems,
+            bpItems
         };
     });
 
-    return { title: sourceName, rows };
+    return {
+        stepKey: step.stepKey,
+        title: sourceName,
+        activeIdx,
+        routes: mappedRoutes
+    };
 }
 
-// Render a single machine's tooltip (with navigation arrows and delta vs active)
-export function renderTooltipHTML(data, idx) {
-    if (!data || !data.rows || !data.rows.length) return '';
+export function renderTooltipHTML(data, viewIdx = 0) {
+    if (!data || !data.routes || data.routes.length === 0) return '';
 
-    const total   = data.rows.length;
-    const safeIdx = ((idx % total) + total) % total;
-    const r       = data.rows[safeIdx];
-    const selRow  = data.rows.find(row => row.isSelected);
+    const total = data.routes.length;
+    const safeIdx = ((viewIdx % total) + total) % total;
+    const r = data.routes[safeIdx];
+    const activeR = data.routes.find(route => route.isSelected) || data.routes[0];
 
-    // ── Header + navigation ───────────────────────────────────────────────────
     let html = `<div class="chart-tip-header">`;
     html += `<div class="chart-tip-title">${data.title}</div>`;
+
     if (total > 1) {
-        html += `<div class="chart-tip-nav">`;
-        html += `<button class="chart-tip-arrow" data-dir="-1">&#8249;</button>`;
-        html += `<span class="chart-tip-nav-label">${safeIdx + 1}\u202f/\u202f${total}</span>`;
-        html += `<button class="chart-tip-arrow" data-dir="1">&#8250;</button>`;
+        html += `<div class="chart-tip-nav" style="display:flex; align-items:center;">`;
+        html += `<button class="chart-tip-arrow" data-dir="-1" style="background:transparent;border:none;color:var(--text);cursor:pointer;font-size:18px;padding:0 5px;">&#8249;</button>`;
+        html += `<span class="chart-tip-nav-label" style="margin: 0 8px;">${safeIdx + 1} / ${total}</span>`;
+        html += `<button class="chart-tip-arrow" data-dir="1" style="background:transparent;border:none;color:var(--text);cursor:pointer;font-size:18px;padding:0 5px;">&#8250;</button>`;
         html += `</div>`;
     }
     html += `</div>`;
 
-    // ── Machine card ──────────────────────────────────────────────────────────
-    const selClass = r.isSelected ? ' chart-tip-selected' : '';
-    const tick     = r.isSelected ? '\u2713 ' : '';
-    const badges   = r.badges.map(b => `<span class="chart-tip-badge ${b.cls}">${b.label}</span>`).join('');
+    const badges = r.badges.map(b => `<span class="chart-tip-badge ${b.cls}">${b.label}</span>`).join('');
 
-    html += `<div class="chart-tip-route${selClass}">`;
-    html += `<div class="chart-tip-machine">${tick}<strong>${r.machine}</strong>${badges}`;
+    html += `<div class="chart-tip-route ${r.isSelected ? 'chart-tip-selected' : ''}">`;
+    html += `<div class="chart-tip-machine">${r.isSelected ? '\u2713 ' : ''}<strong>${r.machine}</strong>${badges}`;
     if (r.catCost > 0 && r.catItem) {
         html += `<span class="chart-tip-cat"> + ${r.catItem} \u00d7${r.catCost.toLocaleString()}</span>`;
     }
     html += `</div>`;
 
-    // Helper: build an amount cell with optional delta vs selected machine
-    function amtCell(amt, key, selItems) {
-        let s = amt.toLocaleString();
-        if (selRow && !r.isSelected && selItems) {
-            const si = selItems.find(x => x.key === key);
-            const delta = amt - (si ? si.amount : 0);
-            if (delta !== 0) {
-                const sign = delta > 0 ? '+' : '';
-                const cls  = delta > 0 ? 'tip-delta-pos' : 'tip-delta-neg';
-                s += ` <span class="${cls}">(${sign}${delta.toLocaleString()})</span>`;
-            }
-        }
-        return s;
+    if (r.reqAmt > 0) {
+        const reqDelta = r.reqAmt - activeR.reqAmt;
+        const reqSign = reqDelta > 0 ? '+' : '';
+        const reqCls = reqDelta < 0 ? 'tip-delta-pos' : reqDelta > 0 ? 'tip-delta-neg' : 'tip-delta-zero';
+        const deltaHtml = (!r.isSelected && reqDelta !== 0) ? ` <span class="${reqCls}">(${reqSign}${reqDelta.toLocaleString()})</span>` : '';
+        html += `<div class="chart-tip-item chart-tip-main" style="margin-top:4px;"><span>Input Cost</span><span><span style="color:var(--text);">${r.reqAmt.toLocaleString()}</span>${deltaHtml}</span></div>`;
     }
 
-    if (r.mainItems && r.mainItems.length) {
-        html += `<div class="chart-tip-section-label">Main yields:</div>`;
-        r.mainItems.forEach(it => {
-            html += `<div class="chart-tip-item chart-tip-main"><span>${it.name}</span><span>${amtCell(it.amount, it.key, selRow?.mainItems)}</span></div>`;
+    const renderItems = (items, activeItems, isMain) => {
+        const unified = [];
+        const seen = new Set();
+        items.forEach(it => { seen.add(it.key); unified.push({ ...it }); });
+        activeItems.forEach(it => { if (!seen.has(it.key)) unified.push({ ...it, amount: 0 }); });
+
+        unified.forEach(it => {
+            if (r.isSelected && it.amount === 0) return;
+            const actAmt = activeItems.find(a => a.key === it.key)?.amount || 0;
+            const delta = it.amount - actAmt;
+            const sign = delta >= 0 ? '+' : '';
+            const cls = delta > 0 ? 'tip-delta-pos' : delta < 0 ? 'tip-delta-neg' : 'tip-delta-zero';
+            const deltaHtml = (!r.isSelected && delta !== 0) ? ` <span class="${cls}">(${sign}${delta.toLocaleString()})</span>` : '';
+            html += `<div class="chart-tip-item ${isMain ? 'chart-tip-main' : 'chart-tip-bp'}"><span>${it.name}</span><span><span style="color:var(--text);">${it.amount.toLocaleString()}</span>${deltaHtml}</span></div>`;
         });
+    };
+
+    if (r.mainItems.length > 0 || activeR.mainItems.length > 0) {
+        html += `<div class="chart-tip-section-label">Main Yields:</div>`;
+        renderItems(r.mainItems, activeR.mainItems, true);
     }
-    if (r.bpItems && r.bpItems.length) {
+    if (r.bpItems.length > 0 || activeR.bpItems.length > 0) {
         html += `<div class="chart-tip-section-label">Byproducts:</div>`;
-        r.bpItems.forEach(it => {
-            html += `<div class="chart-tip-item chart-tip-bp"><span>${it.name}</span><span>${amtCell(it.amount, it.key, selRow?.bpItems)}</span></div>`;
-        });
-    }
-    if (!r.mainItems?.length && !r.bpItems?.length) {
-        html += `<div class="chart-tip-section-label" style="font-style:italic;">No yield data</div>`;
+        renderItems(r.bpItems, activeR.bpItems, false);
     }
 
-    // Active machine footer (shown only when viewing a non-active route)
-    if (selRow && !r.isSelected) {
-        html += `<div class="chart-tip-active-note">Active: ${selRow.machine}</div>`;
+    if (!r.isSelected && data.stepKey) {
+        html += `<button class="chart-btn-confirm" data-step="${data.stepKey}" data-route="${r.name}" style="width:100%; margin-top:10px; padding:6px; font-weight:bold; font-size:12px; background:var(--accent); color:var(--bg-main); border:none; border-radius:4px; cursor:pointer;">Confirm Change</button>`;
+    } else if (!data.stepKey) {
+        html += `<div style="text-align:center; margin-top:10px; font-size:10px; color:var(--text-dim); font-style:italic;">Sub-product preview only</div>`;
     }
 
     html += `</div>`;
     return html;
 }
 
-// Render all routes in full (used by the mobile bottom-sheet)
-export function renderAllRoutesHTML(data) {
-    if (!data || !data.rows || !data.rows.length) return '';
-
-    let html = `<div class="chart-tip-title">${data.title} \u2014 Route Comparison</div>`;
-
-    data.rows.forEach(r => {
-        const selClass = r.isSelected ? ' chart-tip-selected' : '';
-        const tick     = r.isSelected ? '\u2713 ' : '';
-        const badges   = r.badges.map(b => `<span class="chart-tip-badge ${b.cls}">${b.label}</span>`).join('');
-
-        html += `<div class="chart-tip-route${selClass}">`;
-        html += `<div class="chart-tip-machine">${tick}<strong>${r.machine}</strong>${badges}`;
-        if (r.catCost > 0 && r.catItem) {
-            html += `<span class="chart-tip-cat"> + ${r.catItem} \u00d7${r.catCost.toLocaleString()}</span>`;
-        }
-        html += `</div>`;
-        if (r.mainItems?.length) {
-            html += `<div class="chart-tip-section-label">Main yields:</div>`;
-            r.mainItems.forEach(it => {
-                html += `<div class="chart-tip-item chart-tip-main"><span>${it.name}</span><span>${it.amount.toLocaleString()}</span></div>`;
-            });
-        }
-        if (r.bpItems?.length) {
-            html += `<div class="chart-tip-section-label">Byproducts:</div>`;
-            r.bpItems.forEach(it => {
-                html += `<div class="chart-tip-item chart-tip-bp"><span>${it.name}</span><span>${it.amount.toLocaleString()}</span></div>`;
-            });
-        }
-        if (!r.mainItems?.length && !r.bpItems?.length) {
-            html += `<div class="chart-tip-section-label" style="font-style:italic;">No yield data</div>`;
-        }
-        html += `</div>`;
-    });
-
-    return html;
-}
-
-// ─── Layout assignment ────────────────────────────────────────────────────────
+// ─── Topological Layout Assignment ─────────────────────────────────────────────
 
 function assignLayout(nodes, edges) {
     if (nodes.length === 0) return;
 
     const nodeById = {};
-    nodes.forEach(n => { nodeById[n.id] = n; });
-
-    // Build incoming-edge sets
-    const incomingEdges = {};
-    nodes.forEach(n => { incomingEdges[n.id] = []; });
-    edges.forEach(e => {
-        if (incomingEdges[e.toId]) incomingEdges[e.toId].push(e);
+    nodes.forEach(n => {
+        nodeById[n.id] = n;
+        n.col = 0;
+        n.row = 0;
     });
 
-    // Build outgoing adjacency (only non-byproduct edges for column propagation)
-    const outgoingMain = {};
-    nodes.forEach(n => { outgoingMain[n.id] = []; });
+    const incomingCount = {};
+    const outgoingEdges = {};
+    nodes.forEach(n => { incomingCount[n.id] = 0; outgoingEdges[n.id] = []; });
     edges.forEach(e => {
-        if (!e.isByproduct && outgoingMain[e.fromId]) outgoingMain[e.fromId].push(e.toId);
+        outgoingEdges[e.fromId].push(e.toId);
+        incomingCount[e.toId]++;
     });
 
-    // BFS from roots to assign columns (max-depth)
-    const rootIds = nodes
-        .filter(n => n.type !== 'byproduct' && n.type !== 'downstream' && incomingEdges[n.id].length === 0)
-        .map(n => n.id);
-
-    // Initialise columns
-    nodes.forEach(n => { n.col = 0; });
-
-    const queue = [...rootIds];
-    const visited = new Set(queue);
+    const queue = nodes.filter(n => incomingCount[n.id] === 0).map(n => n.id);
     while (queue.length > 0) {
-        const id = queue.shift();
-        const node = nodeById[id];
-        (outgoingMain[id] || []).forEach(toId => {
+        const currentId = queue.shift();
+        const current = nodeById[currentId];
+
+        outgoingEdges[currentId].forEach(toId => {
             const toNode = nodeById[toId];
-            if (toNode) {
-                toNode.col = Math.max(toNode.col, node.col + 1);
-                if (!visited.has(toId)) {
-                    visited.add(toId);
-                    queue.push(toId);
-                }
-            }
+            toNode.col = Math.max(toNode.col, current.col + 1);
+            incomingCount[toId]--;
+            if (incomingCount[toId] === 0) queue.push(toId);
         });
     }
 
-    // Assign byproduct columns = their source (input) node's col + 1
-    // This places byproducts at the same visual column as the main output node.
-    nodes.forEach(n => {
-        if (n.type === 'byproduct' && n.bpSourceId) {
-            const src = nodeById[n.bpSourceId];
-            if (src) n.col = src.col + 1;
+    let nextAvailableRow = 0;
+    const assignedNodes = new Set();
+    const getOutEdges = (id) => edges.filter(e => e.fromId === id);
+    const rawNodes = nodes.filter(n => n.type === 'raw');
+
+    rawNodes.forEach(raw => {
+        if (assignedNodes.has(raw.id)) return;
+
+        let current = raw;
+        const mainLineIds = [];
+        const currentBaseRow = nextAvailableRow++;
+
+        while (current) {
+            current.row = currentBaseRow;
+            assignedNodes.add(current.id);
+            mainLineIds.push(current.id);
+
+            const mainOutEdges = getOutEdges(current.id).filter(e => !e.isByproduct);
+            if (mainOutEdges.length > 0) {
+                const nextId = mainOutEdges[0].toId;
+                current = nodeById[nextId];
+                if (assignedNodes.has(current.id)) { current = null; }
+            } else {
+                current = null;
+            }
         }
+
+        mainLineIds.forEach(mainId => {
+            const bpEdges = getOutEdges(mainId).filter(e => e.isByproduct);
+            bpEdges.sort((a, b) => nodeById[a.toId].col - nodeById[b.toId].col);
+
+            bpEdges.forEach(bpEdge => {
+                const bpNode = nodeById[bpEdge.toId];
+                if (assignedNodes.has(bpNode.id)) return;
+
+                bpNode.row = nextAvailableRow++;
+                assignedNodes.add(bpNode.id);
+
+                const subEdges = getOutEdges(bpNode.id);
+                subEdges.sort((a, b) => nodeById[a.toId].col - nodeById[b.toId].col);
+
+                subEdges.forEach(subEdge => {
+                    const subNode = nodeById[subEdge.toId];
+                    if (assignedNodes.has(subNode.id)) return;
+
+                    subNode.row = nextAvailableRow++;
+                    assignedNodes.add(subNode.id);
+                });
+            });
+        });
     });
 
-    // Assign downstream columns = byproduct parent's col + 1
     nodes.forEach(n => {
-        if (n.type === 'downstream' && n.bpParentId) {
-            const parent = nodeById[n.bpParentId];
-            if (parent) n.col = parent.col + 1;
-        }
-    });
-
-    // Assign rows: group by column
-    const colMainRows = {};
-    const colBpRows = {};
-
-    // First pass: count main nodes per column
-    const mainCountPerCol = {};
-    nodes.forEach(n => {
-        if (n.type !== 'byproduct' && n.type !== 'downstream') {
-            mainCountPerCol[n.col] = (mainCountPerCol[n.col] || 0) + 1;
-        }
-    });
-
-    nodes.forEach(n => {
-        if (n.type !== 'byproduct' && n.type !== 'downstream') {
-            if (colMainRows[n.col] === undefined) colMainRows[n.col] = 0;
-            n.row = colMainRows[n.col];
-            colMainRows[n.col]++;
-        }
-    });
-
-    // Byproducts and downstream nodes go below main nodes at their column
-    nodes.forEach(n => {
-        if (n.type === 'byproduct' || n.type === 'downstream') {
-            const mainCount = mainCountPerCol[n.col] || 0;
-            if (colBpRows[n.col] === undefined) colBpRows[n.col] = mainCount;
-            n.row = colBpRows[n.col];
-            colBpRows[n.col]++;
+        if (!assignedNodes.has(n.id)) {
+            n.row = nextAvailableRow++;
+            assignedNodes.add(n.id);
         }
     });
 }
 
-// ─── SVG rendering ────────────────────────────────────────────────────────────
+// ─── SVG rendering & Event Binding ────────────────────────────────────────────
 
 function renderSVG(container, nodes, edges) {
     if (nodes.length === 0) return;
@@ -542,7 +502,6 @@ function renderSVG(container, nodes, edges) {
     const svgW = (maxCol + 1) * (NODE_W + COL_GAP) + COL_GAP;
     const svgH = (maxRow + 1) * (NODE_H + ROW_GAP) + ROW_GAP * 2;
 
-    // Compute pixel positions
     const nodeById = {};
     nodes.forEach(n => {
         n.x = COL_GAP / 2 + n.col * (NODE_W + COL_GAP);
@@ -560,58 +519,44 @@ function renderSVG(container, nodes, edges) {
     viewport.setAttribute('id', 'chart-viewport');
     svg.appendChild(viewport);
 
-    // ── Draw edges first (below nodes) ──────────────────────────────────────
+    // Render Edges
     edges.forEach(edge => {
         const from = nodeById[edge.fromId];
-        const to   = nodeById[edge.toId];
+        const to = nodeById[edge.toId];
         if (!from || !to) return;
 
-        const sameCol = (from.col === to.col);
+        const startX = from.x + NODE_W;
+        const startY = from.y + NODE_H / 2;
+        const endX = to.x;
+        const endY = to.y + NODE_H / 2;
 
-        // Path endpoints
-        let startX, startY, endX, endY, midX, midY, pathD;
-
-        if (sameCol) {
-            // Vertical drop from bottom-centre of source to left-centre of target
-            startX = from.x + NODE_W / 2;
-            startY = from.y + NODE_H;
-            endX   = to.x;
-            endY   = to.y + NODE_H / 2;
-            const cy = startY + (endY - startY) * 0.5;
-            pathD  = `M ${startX},${startY} C ${startX},${cy} ${endX},${endY} ${endX},${endY}`;
-            midX   = startX + 16;
-            midY   = (startY + endY) / 2;
-        } else {
-            // Horizontal bezier
-            startX = from.x + NODE_W;
-            startY = from.y + NODE_H / 2;
-            endX   = to.x;
-            endY   = to.y + NODE_H / 2;
-            const cx = (startX + endX) / 2;
-            pathD  = `M ${startX},${startY} C ${cx},${startY} ${cx},${endY} ${endX},${endY}`;
-            midX   = (startX + endX) / 2;
-            midY   = (startY + endY) / 2 - 2;
-        }
+        const cx = (startX + endX) / 2;
+        const pathD = `M ${startX},${startY} C ${cx},${startY} ${cx},${endY} ${endX},${endY}`;
+        const midX = (startX + endX) / 2;
+        const midY = (startY + endY) / 2 - 2;
 
         const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
         g.setAttribute('class', `chart-edge${edge.isByproduct ? ' edge-byproduct' : ''}`);
 
         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         path.setAttribute('d', pathD);
+
         if (edge.isByproduct) {
             path.style.stroke = 'var(--warning)';
             path.style.strokeDasharray = '5,3';
             path.style.strokeWidth = '1';
         } else {
-            path.style.stroke = 'var(--border)';
-            path.style.strokeWidth = '1.5';
+            path.style.stroke = 'var(--success)';
+            path.style.strokeWidth = '2.5';
         }
         path.style.fill = 'none';
         g.appendChild(path);
 
-        // Machine label at midpoint
+        edge.dom = { path };
+
         if (edge.label) {
-            const labelText = edge.label;
+            const hasAlts = (edge.tooltipData && edge.tooltipData.routes.length > 1);
+            const labelText = hasAlts ? edge.label + ' \u25BE' : edge.label;
             const approxW = labelText.length * 5.5 + 8;
 
             const bgRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
@@ -622,7 +567,8 @@ function renderSVG(container, nodes, edges) {
             bgRect.setAttribute('rx', '3');
             bgRect.setAttribute('class', 'chart-edge-label-bg');
             bgRect.style.fill = 'var(--bg-main)';
-            bgRect.style.opacity = '0.85';
+            bgRect.style.opacity = '0.9';
+            bgRect.style.pointerEvents = 'none';
             g.appendChild(bgRect);
 
             const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
@@ -632,13 +578,16 @@ function renderSVG(container, nodes, edges) {
             text.setAttribute('dominant-baseline', 'middle');
             text.setAttribute('class', 'chart-edge-label');
             text.style.fontSize = '9px';
-            text.style.fill = 'var(--text-dim)';
+            text.style.fontWeight = edge.isByproduct ? 'normal' : 'bold';
+            text.style.fill = edge.isByproduct ? 'var(--text-dim)' : 'var(--text)';
             text.style.fontFamily = "'Segoe UI', Tahoma, sans-serif";
             text.style.pointerEvents = 'none';
             text.textContent = labelText;
             g.appendChild(text);
 
-            // Invisible wider hover/tap target over the label area
+            edge.dom.bgRect = bgRect;
+            edge.dom.text = text;
+
             if (edge.tooltipData) {
                 const isTouch = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
                 const hitW = Math.max(approxW + 20, isTouch ? 80 : 60);
@@ -650,41 +599,43 @@ function renderSVG(container, nodes, edges) {
                 hit.setAttribute('height', hitH);
                 hit.setAttribute('rx', '3');
                 hit.style.fill = 'transparent';
-                hit.style.cursor = isTouch ? 'pointer' : 'help';
+                hit.style.cursor = 'pointer';
+                hit.style.pointerEvents = 'auto';
                 hit.dataset.tooltipJson = JSON.stringify(edge.tooltipData);
                 hit.classList.add('chart-tip-trigger');
                 if (isTouch) hit.classList.add('chart-tip-trigger-touch');
                 g.appendChild(hit);
+
+                edge.dom.hit = hit;
             }
         }
-
         viewport.appendChild(g);
     });
 
-    // ── Draw nodes ────────────────────────────────────────────────────────────
+    // Render Nodes 
     nodes.forEach(node => {
         const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
         g.setAttribute('class', `chart-node node-${node.type}`);
         g.setAttribute('transform', `translate(${node.x},${node.y})`);
+        g.style.cursor = 'grab';
 
-        // Background rect
         const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
         rect.setAttribute('width', NODE_W);
         rect.setAttribute('height', NODE_H);
         rect.setAttribute('rx', '5');
         rect.style.fill = 'var(--bg-card)';
-        rect.style.strokeWidth = node.type === 'target' ? '2.5' : '1.5';
+        rect.style.strokeWidth = '2';
 
         switch (node.type) {
-            case 'raw':        rect.style.stroke = 'var(--text-dim)'; break;
-            case 'byproduct':  rect.style.stroke = 'var(--warning)';  break;
-            case 'target':     rect.style.stroke = 'var(--success)';  break;
-            case 'downstream': rect.style.stroke = '#5bc0de';         break;
-            default:           rect.style.stroke = 'var(--accent)';   break;
+            case 'raw':
+            case 'main':
+            case 'target': rect.style.stroke = 'var(--success)'; break;
+            case 'byproduct': rect.style.stroke = 'var(--warning)'; break;
+            case 'downstream': rect.style.stroke = '#5bc0de'; break;
+            default: rect.style.stroke = 'var(--accent)'; break;
         }
         g.appendChild(rect);
 
-        // Item name (top line)
         const nameText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
         nameText.setAttribute('x', NODE_W / 2);
         nameText.setAttribute('y', NODE_H / 2 - 8);
@@ -699,7 +650,6 @@ function renderSVG(container, nodes, edges) {
         nameText.textContent = node.label;
         g.appendChild(nameText);
 
-        // Amount (bottom line)
         const amtText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
         amtText.setAttribute('x', NODE_W / 2);
         amtText.setAttribute('y', NODE_H / 2 + 10);
@@ -711,26 +661,28 @@ function renderSVG(container, nodes, edges) {
         amtText.style.fontFamily = "'Segoe UI', Tahoma, sans-serif";
 
         switch (node.type) {
-            case 'byproduct':  amtText.style.fill = 'var(--warning)'; break;
-            case 'target':     amtText.style.fill = 'var(--success)'; break;
-            case 'raw':        amtText.style.fill = 'var(--text-dim)'; break;
-            case 'downstream': amtText.style.fill = '#5bc0de';        break;
-            default:           amtText.style.fill = 'var(--accent)';  break;
+            case 'byproduct': amtText.style.fill = 'var(--warning)'; break;
+            case 'target':
+            case 'raw':
+            case 'main': amtText.style.fill = 'var(--success)'; break;
+            case 'downstream': amtText.style.fill = '#5bc0de'; break;
+            default: amtText.style.fill = 'var(--accent)'; break;
         }
         amtText.textContent = (node.amount || 0).toLocaleString();
         g.appendChild(amtText);
 
         viewport.appendChild(g);
+
+        node.dom = { rect, group: g };
+        attachNodeDrag(node, edges, nodeById);
     });
 
     container.appendChild(svg);
-    attachTooltip(container, svg);
+    attachTooltip(container, svg, nodes, edges, nodeById);
     attachZoomPan(svg, viewport);
 
-    // Wire Reset View button (stamp may already be in DOM by now)
     const resetBtn = document.getElementById('btnChartReset');
     if (resetBtn) {
-        // Remove previous listener by cloning
         const newBtn = resetBtn.cloneNode(true);
         resetBtn.parentNode.replaceChild(newBtn, resetBtn);
         newBtn.addEventListener('click', () => {
@@ -738,135 +690,253 @@ function renderSVG(container, nodes, edges) {
             _zoom.scale = 1;
             _zoom.tx = 0;
             _zoom.ty = 0;
+            refreshChart();
         });
     }
 }
 
-// ─── Tooltip hover logic ─────────────────────────────────────────────────────
+// ─── Fast Drag Logic for Individual Nodes ─────────────────────────────────────
 
-function attachTooltip(container, svg) {
-    // Append tooltip to body so overflow:hidden on the wrapper doesn't clip it
+function attachNodeDrag(node, edges, nodeById) {
+    let isDragging = false;
+    let startMouseX, startMouseY, initNodeX, initNodeY;
+
+    node.dom.group.addEventListener('pointerdown', (e) => {
+        if (e.button !== undefined && e.button !== 0) return;
+        e.stopPropagation();
+
+        isDragging = true;
+        node.dom.group.style.cursor = 'grabbing';
+        node.dom.group.setPointerCapture(e.pointerId);
+
+        startMouseX = e.clientX;
+        startMouseY = e.clientY;
+        initNodeX = node.x;
+        initNodeY = node.y;
+    });
+
+    node.dom.group.addEventListener('pointermove', (e) => {
+        if (!isDragging) return;
+
+        const dragSpeed = 1.6;
+        const dx = ((e.clientX - startMouseX) / _zoom.scale) * dragSpeed;
+        const dy = ((e.clientY - startMouseY) / _zoom.scale) * dragSpeed;
+
+        node.x = initNodeX + dx;
+        node.y = initNodeY + dy;
+
+        node.dom.group.setAttribute('transform', `translate(${node.x},${node.y})`);
+
+        updateEdgesForNode(node.id, edges, nodeById);
+    });
+
+    const endDrag = (e) => {
+        if (!isDragging) return;
+        isDragging = false;
+        node.dom.group.style.cursor = 'grab';
+        node.dom.group.releasePointerCapture(e.pointerId);
+    };
+
+    node.dom.group.addEventListener('pointerup', endDrag);
+    node.dom.group.addEventListener('pointercancel', endDrag);
+}
+
+// ─── Dynamic Wire Routing ─────────────────────────────────────────────────────
+
+function updateEdgesForNode(nodeId, edges, nodeById) {
+    edges.forEach(edge => {
+        if (edge.fromId === nodeId || edge.toId === nodeId) {
+            const from = nodeById[edge.fromId];
+            const to = nodeById[edge.toId];
+
+            const startX = from.x + NODE_W;
+            const startY = from.y + NODE_H / 2;
+            const endX = to.x;
+            const endY = to.y + NODE_H / 2;
+
+            const cx = (startX + endX) / 2;
+            const pathD = `M ${startX},${startY} C ${cx},${startY} ${cx},${endY} ${endX},${endY}`;
+            const midX = (startX + endX) / 2;
+            const midY = (startY + endY) / 2 - 2;
+
+            if (edge.dom.path) {
+                edge.dom.path.setAttribute('d', pathD);
+            }
+            if (edge.dom.bgRect) {
+                const approxW = parseFloat(edge.dom.bgRect.getAttribute('width'));
+                edge.dom.bgRect.setAttribute('x', midX - approxW / 2);
+                edge.dom.bgRect.setAttribute('y', midY - 9);
+            }
+            if (edge.dom.text) {
+                edge.dom.text.setAttribute('x', midX);
+                edge.dom.text.setAttribute('y', midY);
+            }
+            if (edge.dom.hit) {
+                const hitW = parseFloat(edge.dom.hit.getAttribute('width'));
+                const hitH = parseFloat(edge.dom.hit.getAttribute('height'));
+                edge.dom.hit.setAttribute('x', midX - hitW / 2);
+                edge.dom.hit.setAttribute('y', midY - hitH / 2);
+            }
+        }
+    });
+}
+
+// ─── Tooltip hover & Highlight Linkage ────────────────────────────────────────
+
+function attachTooltip(container, svg, nodes, edges, nodeById) {
     let tip = document.getElementById('chartTooltip');
+
     if (!tip) {
         tip = document.createElement('div');
         tip.id = 'chartTooltip';
         document.body.appendChild(tip);
-    }
-    tip.className = 'chart-tooltip';
-    tip.style.cssText = [
-        'position:fixed',
-        'z-index:9999',
-        'background:var(--bg-card)',
-        'border:1px solid var(--border)',
-        'border-radius:6px',
-        'padding:10px 12px',
-        'max-width:340px',
-        'width:max-content',
-        'pointer-events:auto',
-        'box-shadow:0 4px 16px rgba(0,0,0,.5)',
-        'font-family:Segoe UI,Tahoma,sans-serif',
-        'display:none'
-    ].join(';');
 
-    let hideTimer = null;
+        tip.className = 'chart-tooltip';
+        tip.style.cssText = [
+            'position:fixed', 'z-index:9999', 'background:var(--bg-card)',
+            'border:2px solid var(--border)', 'border-radius:6px',
+            'padding:10px 12px', 'max-width:340px', 'width:max-content',
+            'pointer-events:auto', 'box-shadow:0 4px 16px rgba(0,0,0,.5)',
+            'font-family:Segoe UI,Tahoma,sans-serif', 'display:none',
+            'transition: border-color 0.2s, box-shadow 0.2s'
+        ].join(';');
 
-    function showTip(data, idx, clientX, clientY) {
-        clearTimeout(hideTimer);
-        tip._data = data;
-        tip._idx  = idx;
-        tip.innerHTML = renderTooltipHTML(data, idx);
-        tip.style.display = 'block';
-        positionTip(clientX, clientY);
-    }
+        tip.addEventListener('click', (e) => {
+            e.stopPropagation();
 
-    function hideTip() {
-        hideTimer = setTimeout(() => {
-            tip.style.display = 'none';
-            tip._data = null;
-        }, 100);
-    }
+            const arrow = e.target.closest('.chart-tip-arrow');
+            if (arrow && tip._data) {
+                const dir = parseInt(arrow.dataset.dir, 10);
+                const total = tip._data.routes.length;
+                tip._idx = ((tip._idx + dir) % total + total) % total;
+                tip.innerHTML = renderTooltipHTML(tip._data, tip._idx);
+                return;
+            }
 
-    function positionTip(clientX, clientY) {
-        const tipW = tip.offsetWidth || 280;
-        const tipH = tip.offsetHeight || 120;
-        const margin = 14;
-        const vw = window.innerWidth;
-        const vh = window.innerHeight;
+            const confirmBtn = e.target.closest('.chart-btn-confirm');
+            if (confirmBtn && window.updatePathChoice) {
+                const stepKey = confirmBtn.dataset.step;
+                const routeName = confirmBtn.dataset.route;
 
-        let x = clientX + margin;
-        let y = clientY + margin;
+                window.updatePathChoice(null, stepKey, routeName);
 
-        if (x + tipW > vw - 4) x = clientX - tipW - margin;
-        if (y + tipH > vh - 4) y = clientY - tipH - margin;
+                setTimeout(() => refreshChart(), 50);
 
-        tip.style.left = Math.max(4, x) + 'px';
-        tip.style.top  = Math.max(4, y) + 'px';
-    }
+                clearHighlights();
+                tip.style.display = 'none';
+                tip._data = null;
+                return;
+            }
+        });
 
-    // Arrow clicks inside the tooltip cycle through machines
-    tip.addEventListener('click', (e) => {
-        const arrow = e.target.closest('.chart-tip-arrow');
-        if (!arrow || !tip._data) return;
-        const dir   = parseInt(arrow.dataset.dir, 10);
-        const total = tip._data.rows.length;
-        tip._idx    = ((tip._idx + dir) % total + total) % total;
-        tip.innerHTML = renderTooltipHTML(tip._data, tip._idx);
-    });
-
-    // Keep tooltip visible when the mouse is over it
-    tip.addEventListener('mouseenter', () => clearTimeout(hideTimer));
-    tip.addEventListener('mouseleave', hideTip);
-
-    // Event delegation on the SVG for tooltip triggers
-    svg.addEventListener('mouseover', (e) => {
-        const trigger = e.target.closest('.chart-tip-trigger');
-        if (!trigger) return;
-        const data = JSON.parse(trigger.dataset.tooltipJson || 'null');
-        if (!data) return;
-        // Start at the currently-selected machine
-        const selIdx = Math.max(0, data.rows.findIndex(r => r.isSelected));
-        showTip(data, selIdx, e.clientX, e.clientY);
-    });
-
-    svg.addEventListener('mousemove', (e) => {
-        if (tip.style.display === 'none') return;
-        if (!e.target.closest('.chart-tip-trigger')) return;
-        positionTip(e.clientX, e.clientY);
-    });
-
-    svg.addEventListener('mouseout', (e) => {
-        if (!e.target.closest('.chart-tip-trigger')) return;
-        hideTip();
-    });
-
-    // Touch / click: tap a chart edge label → bottom sheet (shows all routes)
-    svg.addEventListener('click', (e) => {
-        const trigger = e.target.closest('.chart-tip-trigger');
-        if (!trigger) return;
-        const data = JSON.parse(trigger.dataset.tooltipJson || 'null');
-        if (!data) return;
-        tip.style.display = 'none';
-        tip._data = null;
-        openBottomSheet({ title: data.title || 'Route Comparison', html: renderAllRoutesHTML(data) });
-    });
-
-    // Hide when the modal closes
-    const modal = document.getElementById('chartModal');
-    if (modal) {
-        new MutationObserver(() => {
-            if (!modal.classList.contains('open') && modal.style.display === 'none') {
+        document.addEventListener('click', (e) => {
+            if (tip.style.display !== 'none' && !tip.contains(e.target) && !e.target.closest('.chart-tip-trigger')) {
+                clearHighlights();
                 tip.style.display = 'none';
                 tip._data = null;
             }
-        }).observe(modal, { attributes: true, attributeFilter: ['style', 'class'] });
+        });
+
+        const modal = document.getElementById('chartModal');
+        if (modal) {
+            new MutationObserver(() => {
+                if (!modal.classList.contains('open') && modal.style.display === 'none') {
+                    clearHighlights();
+                    tip.style.display = 'none';
+                    tip._data = null;
+                }
+            }).observe(modal, { attributes: true, attributeFilter: ['style', 'class'] });
+        }
     }
+
+    function clearHighlights() {
+        document.querySelectorAll('.chart-active-highlight').forEach(el => {
+            el.classList.remove('chart-active-highlight');
+            el.style.stroke = el.dataset.origStroke;
+            el.style.strokeWidth = el.dataset.origStrokeWidth;
+            el.style.filter = 'none';
+        });
+    }
+
+    function highlightElement(el, color) {
+        if (!el) return;
+        el.classList.add('chart-active-highlight');
+        if (!el.dataset.origStroke) {
+            el.dataset.origStroke = el.style.stroke;
+            el.dataset.origStrokeWidth = el.style.strokeWidth;
+        }
+        el.style.stroke = color;
+        el.style.strokeWidth = '3px';
+        el.style.filter = `drop-shadow(0 0 6px ${color}80)`;
+    }
+
+    function showTip(data, clientX, clientY) {
+        tip._data = data;
+        tip._idx = data.activeIdx || 0;
+        tip.innerHTML = renderTooltipHTML(data, tip._idx);
+        tip.style.display = 'block';
+
+        clearHighlights();
+        if (data.stepKey) {
+            const highlightColor = '#b388ff';
+            tip.style.borderColor = highlightColor;
+            tip.style.boxShadow = `0 0 18px ${highlightColor}60`;
+
+            edges.forEach(edge => {
+                if (edge.tooltipData && edge.tooltipData.stepKey === data.stepKey) {
+                    highlightElement(edge.dom.path, highlightColor);
+                    const fromNode = nodeById[edge.fromId];
+                    const toNode = nodeById[edge.toId];
+                    if (fromNode && fromNode.dom.rect) highlightElement(fromNode.dom.rect, highlightColor);
+                    if (toNode && toNode.dom.rect) highlightElement(toNode.dom.rect, highlightColor);
+                }
+            });
+        } else {
+            tip.style.borderColor = 'var(--border)';
+            tip.style.boxShadow = '0 4px 16px rgba(0,0,0,.5)';
+        }
+
+        const tipW = tip.offsetWidth || 280;
+        const tipH = tip.offsetHeight || 120;
+        const margin = 14;
+        let x = clientX + margin;
+        let y = clientY + margin;
+
+        if (x + tipW > window.innerWidth - 4) x = clientX - tipW - margin;
+        if (y + tipH > window.innerHeight - 4) y = clientY - tipH - margin;
+
+        tip.style.left = Math.max(4, x) + 'px';
+        tip.style.top = Math.max(4, y) + 'px';
+    }
+
+    svg.addEventListener('click', (e) => {
+        const trigger = e.target.closest('.chart-tip-trigger');
+        if (trigger) {
+            const data = JSON.parse(trigger.dataset.tooltipJson || 'null');
+            if (!data) return;
+
+            if (trigger.classList.contains('chart-tip-trigger-touch')) {
+                clearHighlights();
+                tip.style.display = 'none';
+                tip._data = null;
+                openBottomSheet({ title: data.title || 'Route Data', html: renderTooltipHTML(data, data.activeIdx || 0) });
+                return;
+            }
+
+            e.stopPropagation();
+            showTip(data, e.clientX, e.clientY);
+            return;
+        }
+
+        clearHighlights();
+        tip.style.display = 'none';
+        tip._data = null;
+    });
 }
 
 // ─── Zoom & pan ───────────────────────────────────────────────────────────────
 
-// Module-level zoom state so Reset can access it
 const _zoom = { scale: 1, tx: 0, ty: 0 };
-
 
 function applyTransform(viewport) {
     viewport.setAttribute('transform', `translate(${_zoom.tx},${_zoom.ty}) scale(${_zoom.scale})`);
@@ -877,7 +947,6 @@ function attachZoomPan(svg, viewport) {
     _zoom.tx = 0;
     _zoom.ty = 0;
 
-    // Scroll-wheel zoom (desktop)
     svg.addEventListener('wheel', (e) => {
         e.preventDefault();
         const rect = svg.getBoundingClientRect();
@@ -893,8 +962,7 @@ function attachZoomPan(svg, viewport) {
         applyTransform(viewport);
     }, { passive: false });
 
-    // Multi-pointer tracking: supports both 1-finger pan and 2-finger pinch-zoom
-    const activePointers = new Map(); // pointerId → { x, y }
+    const activePointers = new Map();
     let lastPinchDist = 0;
 
     function pinchDist(map) {
@@ -904,9 +972,13 @@ function attachZoomPan(svg, viewport) {
 
     svg.addEventListener('pointerdown', (e) => {
         if (e.button !== undefined && e.button !== 0) return;
+
+        if (e.target.closest('.chart-tip-trigger') || e.target.closest('.chart-node')) {
+            return;
+        }
+
         activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
         svg.setPointerCapture(e.pointerId);
-        // Seed pinch distance when the second finger touches down
         if (activePointers.size === 2) lastPinchDist = pinchDist(activePointers);
         e.preventDefault();
     });
@@ -918,16 +990,14 @@ function attachZoomPan(svg, viewport) {
         activePointers.set(e.pointerId, curr);
 
         if (activePointers.size === 1) {
-            // Single pointer: pan
             _zoom.tx += curr.x - prev.x;
             _zoom.ty += curr.y - prev.y;
             applyTransform(viewport);
         } else if (activePointers.size >= 2) {
-            // Two pointers: pinch-zoom toward midpoint
             const newDist = pinchDist(activePointers);
             if (lastPinchDist > 0) {
                 const scaleFactor = newDist / lastPinchDist;
-                const pts  = [...activePointers.values()];
+                const pts = [...activePointers.values()];
                 const rect = svg.getBoundingClientRect();
                 const midX = (pts[0].x + pts[1].x) / 2 - rect.left;
                 const midY = (pts[0].y + pts[1].y) / 2 - rect.top;
@@ -941,6 +1011,6 @@ function attachZoomPan(svg, viewport) {
         }
     });
 
-    svg.addEventListener('pointerup',     (e) => { activePointers.delete(e.pointerId); lastPinchDist = 0; });
+    svg.addEventListener('pointerup', (e) => { activePointers.delete(e.pointerId); lastPinchDist = 0; });
     svg.addEventListener('pointercancel', (e) => { activePointers.delete(e.pointerId); lastPinchDist = 0; });
 }

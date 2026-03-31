@@ -191,9 +191,109 @@
     <div id="chartModal" class="modal"></div>
     <template id="tpl_chartModal">
         <div class="modal-content module chart-modal-content">
+            <style>
+                .chart-switch-wrapper {
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    font-size: 11px;
+                    color: var(--text);
+                    cursor: pointer;
+                    transition: opacity 0.2s;
+                }
+
+                .chart-switch {
+                    position: relative;
+                    width: 32px;
+                    height: 18px;
+                }
+
+                    .chart-switch input {
+                        opacity: 0;
+                        width: 0;
+                        height: 0;
+                        margin: 0;
+                    }
+
+                .chart-slider {
+                    position: absolute;
+                    cursor: pointer;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background-color: var(--bg-main);
+                    transition: .2s;
+                    border-radius: 18px;
+                    border: 1px solid var(--border);
+                }
+
+                    .chart-slider:before {
+                        position: absolute;
+                        content: "";
+                        height: 12px;
+                        width: 12px;
+                        left: 2px;
+                        bottom: 1px;
+                        background-color: var(--text-dim);
+                        transition: .2s;
+                        border-radius: 50%;
+                    }
+
+                .chart-switch input:checked + .chart-slider {
+                    border-color: transparent;
+                }
+
+                    .chart-switch input:checked + .chart-slider.slider-bp {
+                        background-color: var(--warning);
+                    }
+
+                    .chart-switch input:checked + .chart-slider.slider-sub {
+                        background-color: #5bc0de;
+                    }
+
+                    .chart-switch input:checked + .chart-slider:before {
+                        transform: translateX(14px);
+                        background-color: #111;
+                    }
+
+                .chart-switch input:disabled + .chart-slider {
+                    cursor: not-allowed;
+                    opacity: 0.5;
+                }
+
+                .legend-dot {
+                    display: inline-block;
+                    width: 10px;
+                    height: 10px;
+                    border-radius: 50%;
+                    margin-right: 4px;
+                }
+            </style>
             <div class="modal-header-sticky">
-                <h3 style="margin:0; color:var(--accent);" id="ui_chartTitle">Production Chain</h3>
-                <div style="display:flex; gap:8px; align-items:center;">
+                <h3 style="margin:0; color:var(--accent); display:flex; align-items:center; gap:15px;" id="ui_chartTitle">
+                    Production Chain
+                    <div style="font-size:11px; font-weight:normal; display:flex; gap:12px; border-left:1px solid var(--border); padding-left:15px;">
+                        <span style="display:flex;align-items:center;"><span class="legend-dot" style="background:var(--success);"></span> Main Path</span>
+                        <span style="display:flex;align-items:center;"><span class="legend-dot" style="background:var(--warning);"></span> Byproducts</span>
+                        <span style="display:flex;align-items:center;"><span class="legend-dot" style="background:#5bc0de;"></span> Sub-products</span>
+                    </div>
+                </h3>
+                <div style="display:flex; gap:16px; align-items:center;">
+                    <label class="chart-switch-wrapper">
+                        <div class="chart-switch">
+                            <input type="checkbox" id="chkChartBp" checked>
+                            <span class="chart-slider slider-bp"></span>
+                        </div>
+                        Byproducts
+                    </label>
+                    <label class="chart-switch-wrapper" id="lblChartSubBp">
+                        <div class="chart-switch">
+                            <input type="checkbox" id="chkChartSubBp" checked>
+                            <span class="chart-slider slider-sub"></span>
+                        </div>
+                        Sub-products
+                    </label>
                     <button class="btn-mini" id="btnChartReset">Reset View</button>
                     <span class="close" data-close="chartModal">&times;</span>
                 </div>

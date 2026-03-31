@@ -532,16 +532,10 @@ export function calculate() {
         return;
     }
 
+    // Enable the max button and hide the empty hint
     if (btnMax) btnMax.disabled = false;
-    const wasEmpty = hint && hint.style.display !== 'none';
     if (hint) hint.style.display = 'none';
-    if (wasEmpty) {
-        const prodCmd = document.getElementById('mod_prodCmd');
-        if (prodCmd && !prodCmd.classList.contains('collapsed')) {
-            prodCmd.classList.add('collapsed');
-            state.collapsedState['mod_prodCmd'] = true;
-        }
-    }
+
     const defGather = document.getElementById('mod_defGather');
     if (defGather) defGather.style.display = '';
 
