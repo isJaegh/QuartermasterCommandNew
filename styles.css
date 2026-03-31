@@ -1623,6 +1623,70 @@ select:focus {
 .tip-badge-max { background: #1a3a1a; color: #5cb85c; }
 .tip-badge-reg { background: #3a2a10; color: #f0a500; }
 
+/* ── Tooltip header: title + machine navigation ── */
+.chart-tip-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+.chart-tip-header .chart-tip-title {
+    margin-bottom: 0;
+    flex: 1;
+}
+.chart-tip-nav {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
+}
+.chart-tip-nav-label {
+    font-size: 10px;
+    color: var(--text-dim);
+    min-width: 28px;
+    text-align: center;
+}
+.chart-tip-arrow {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1;
+    padding: 1px 5px;
+    cursor: pointer;
+    pointer-events: auto;
+}
+.chart-tip-arrow:hover {
+    background: var(--bg-main);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+/* ── Inline delta vs active machine ── */
+.tip-delta-pos  { color: #5cb85c !important; font-size: 10px; font-variant-numeric: tabular-nums; }
+.tip-delta-neg  { color: var(--warning) !important; font-size: 10px; font-variant-numeric: tabular-nums; }
+.tip-delta-zero { color: var(--text-dim) !important; font-size: 10px; font-variant-numeric: tabular-nums; }
+
+/* ── "vs ✓ Machine" label in pipe diff tooltip ── */
+.chart-tip-vs {
+    font-size: 9px;
+    color: var(--success);
+    font-weight: normal;
+    opacity: 0.85;
+}
+
+/* ── Active machine footer note ── */
+.chart-tip-active-note {
+    font-size: 9px;
+    color: var(--text-dim);
+    margin-top: 5px;
+    padding-top: 4px;
+    border-top: 1px solid var(--border);
+    font-style: italic;
+}
+
 /* ── BOTTOM SHEET ─────────────────────────────────────────────────────────── */
 
 .bottom-sheet-backdrop {

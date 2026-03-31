@@ -121,8 +121,10 @@ function buildChartData(steps, t, mE, mM) {
             });
         });
 
-        // Byproduct nodes — branch downward from the OUTPUT node (same column as output)
-        const bpSourceId = outputIds.length > 0 ? outputIds[0] : resolvedInputIds[0];
+        // Byproduct nodes — branch from the PRIMARY INPUT node, same as the main output edge.
+        // This makes it visually clear that the machine converts the input into both the
+        // main output AND all byproducts before any downstream branching occurs.
+        const bpSourceId = resolvedInputIds.length > 0 ? resolvedInputIds[0] : (outputIds[0] || null);
         (step.byproducts || []).forEach(y => {
             const bpNodeId = makeId();
             nodes.push({
@@ -323,15 +325,89 @@ function buildTooltipData(step, t, mE, mM) {
     return { title: sourceName, rows };
 }
 
-export function renderTooltipHTML(data) {
+// Render a single machine's tooltip (with navigation arrows and delta vs active)
+export function renderTooltipHTML(data, idx) {
+    if (!data || !data.rows || !data.rows.length) return '';
+
+    const total   = data.rows.length;
+    const safeIdx = ((idx % total) + total) % total;
+    const r       = data.rows[safeIdx];
+    const selRow  = data.rows.find(row => row.isSelected);
+
+    // ── Header + navigation ───────────────────────────────────────────────────
+    let html = `<div class="chart-tip-header">`;
+    html += `<div class="chart-tip-title">${data.title}</div>`;
+    if (total > 1) {
+        html += `<div class="chart-tip-nav">`;
+        html += `<button class="chart-tip-arrow" data-dir="-1">&#8249;</button>`;
+        html += `<span class="chart-tip-nav-label">${safeIdx + 1}\u202f/\u202f${total}</span>`;
+        html += `<button class="chart-tip-arrow" data-dir="1">&#8250;</button>`;
+        html += `</div>`;
+    }
+    html += `</div>`;
+
+    // ── Machine card ──────────────────────────────────────────────────────────
+    const selClass = r.isSelected ? ' chart-tip-selected' : '';
+    const tick     = r.isSelected ? '\u2713 ' : '';
+    const badges   = r.badges.map(b => `<span class="chart-tip-badge ${b.cls}">${b.label}</span>`).join('');
+
+    html += `<div class="chart-tip-route${selClass}">`;
+    html += `<div class="chart-tip-machine">${tick}<strong>${r.machine}</strong>${badges}`;
+    if (r.catCost > 0 && r.catItem) {
+        html += `<span class="chart-tip-cat"> + ${r.catItem} \u00d7${r.catCost.toLocaleString()}</span>`;
+    }
+    html += `</div>`;
+
+    // Helper: build an amount cell with optional delta vs selected machine
+    function amtCell(amt, key, selItems) {
+        let s = amt.toLocaleString();
+        if (selRow && !r.isSelected && selItems) {
+            const si = selItems.find(x => x.key === key);
+            const delta = amt - (si ? si.amount : 0);
+            if (delta !== 0) {
+                const sign = delta > 0 ? '+' : '';
+                const cls  = delta > 0 ? 'tip-delta-pos' : 'tip-delta-neg';
+                s += ` <span class="${cls}">(${sign}${delta.toLocaleString()})</span>`;
+            }
+        }
+        return s;
+    }
+
+    if (r.mainItems && r.mainItems.length) {
+        html += `<div class="chart-tip-section-label">Main yields:</div>`;
+        r.mainItems.forEach(it => {
+            html += `<div class="chart-tip-item chart-tip-main"><span>${it.name}</span><span>${amtCell(it.amount, it.key, selRow?.mainItems)}</span></div>`;
+        });
+    }
+    if (r.bpItems && r.bpItems.length) {
+        html += `<div class="chart-tip-section-label">Byproducts:</div>`;
+        r.bpItems.forEach(it => {
+            html += `<div class="chart-tip-item chart-tip-bp"><span>${it.name}</span><span>${amtCell(it.amount, it.key, selRow?.bpItems)}</span></div>`;
+        });
+    }
+    if (!r.mainItems?.length && !r.bpItems?.length) {
+        html += `<div class="chart-tip-section-label" style="font-style:italic;">No yield data</div>`;
+    }
+
+    // Active machine footer (shown only when viewing a non-active route)
+    if (selRow && !r.isSelected) {
+        html += `<div class="chart-tip-active-note">Active: ${selRow.machine}</div>`;
+    }
+
+    html += `</div>`;
+    return html;
+}
+
+// Render all routes in full (used by the mobile bottom-sheet)
+export function renderAllRoutesHTML(data) {
     if (!data || !data.rows || !data.rows.length) return '';
 
     let html = `<div class="chart-tip-title">${data.title} \u2014 Route Comparison</div>`;
 
     data.rows.forEach(r => {
         const selClass = r.isSelected ? ' chart-tip-selected' : '';
-        const tick = r.isSelected ? '\u2713 ' : '';
-        const badges = r.badges.map(b => `<span class="chart-tip-badge ${b.cls}">${b.label}</span>`).join('');
+        const tick     = r.isSelected ? '\u2713 ' : '';
+        const badges   = r.badges.map(b => `<span class="chart-tip-badge ${b.cls}">${b.label}</span>`).join('');
 
         html += `<div class="chart-tip-route${selClass}">`;
         html += `<div class="chart-tip-machine">${tick}<strong>${r.machine}</strong>${badges}`;
@@ -339,23 +415,21 @@ export function renderTooltipHTML(data) {
             html += `<span class="chart-tip-cat"> + ${r.catItem} \u00d7${r.catCost.toLocaleString()}</span>`;
         }
         html += `</div>`;
-
-        if (r.mainItems && r.mainItems.length) {
+        if (r.mainItems?.length) {
             html += `<div class="chart-tip-section-label">Main yields:</div>`;
             r.mainItems.forEach(it => {
                 html += `<div class="chart-tip-item chart-tip-main"><span>${it.name}</span><span>${it.amount.toLocaleString()}</span></div>`;
             });
         }
-        if (r.bpItems && r.bpItems.length) {
+        if (r.bpItems?.length) {
             html += `<div class="chart-tip-section-label">Byproducts:</div>`;
             r.bpItems.forEach(it => {
                 html += `<div class="chart-tip-item chart-tip-bp"><span>${it.name}</span><span>${it.amount.toLocaleString()}</span></div>`;
             });
         }
-        if ((!r.mainItems || !r.mainItems.length) && (!r.bpItems || !r.bpItems.length)) {
+        if (!r.mainItems?.length && !r.bpItems?.length) {
             html += `<div class="chart-tip-section-label" style="font-style:italic;">No yield data</div>`;
         }
-
         html += `</div>`;
     });
 
@@ -409,11 +483,12 @@ function assignLayout(nodes, edges) {
         });
     }
 
-    // Assign byproduct columns = their source node's col (same column as the output node)
+    // Assign byproduct columns = their source (input) node's col + 1
+    // This places byproducts at the same visual column as the main output node.
     nodes.forEach(n => {
         if (n.type === 'byproduct' && n.bpSourceId) {
             const src = nodeById[n.bpSourceId];
-            if (src) n.col = src.col;
+            if (src) n.col = src.col + 1;
         }
     });
 
@@ -678,7 +753,6 @@ function attachTooltip(container, svg) {
         document.body.appendChild(tip);
     }
     tip.className = 'chart-tooltip';
-    // Ensure critical layout styles are always applied even if CSS hasn't reloaded
     tip.style.cssText = [
         'position:fixed',
         'z-index:9999',
@@ -688,7 +762,7 @@ function attachTooltip(container, svg) {
         'padding:10px 12px',
         'max-width:340px',
         'width:max-content',
-        'pointer-events:none',
+        'pointer-events:auto',
         'box-shadow:0 4px 16px rgba(0,0,0,.5)',
         'font-family:Segoe UI,Tahoma,sans-serif',
         'display:none'
@@ -696,15 +770,20 @@ function attachTooltip(container, svg) {
 
     let hideTimer = null;
 
-    function showTip(html, clientX, clientY) {
+    function showTip(data, idx, clientX, clientY) {
         clearTimeout(hideTimer);
-        tip.innerHTML = html;
+        tip._data = data;
+        tip._idx  = idx;
+        tip.innerHTML = renderTooltipHTML(data, idx);
         tip.style.display = 'block';
         positionTip(clientX, clientY);
     }
 
     function hideTip() {
-        hideTimer = setTimeout(() => { tip.style.display = 'none'; }, 80);
+        hideTimer = setTimeout(() => {
+            tip.style.display = 'none';
+            tip._data = null;
+        }, 100);
     }
 
     function positionTip(clientX, clientY) {
@@ -724,13 +803,29 @@ function attachTooltip(container, svg) {
         tip.style.top  = Math.max(4, y) + 'px';
     }
 
+    // Arrow clicks inside the tooltip cycle through machines
+    tip.addEventListener('click', (e) => {
+        const arrow = e.target.closest('.chart-tip-arrow');
+        if (!arrow || !tip._data) return;
+        const dir   = parseInt(arrow.dataset.dir, 10);
+        const total = tip._data.rows.length;
+        tip._idx    = ((tip._idx + dir) % total + total) % total;
+        tip.innerHTML = renderTooltipHTML(tip._data, tip._idx);
+    });
+
+    // Keep tooltip visible when the mouse is over it
+    tip.addEventListener('mouseenter', () => clearTimeout(hideTimer));
+    tip.addEventListener('mouseleave', hideTip);
+
     // Event delegation on the SVG for tooltip triggers
     svg.addEventListener('mouseover', (e) => {
         const trigger = e.target.closest('.chart-tip-trigger');
         if (!trigger) return;
         const data = JSON.parse(trigger.dataset.tooltipJson || 'null');
         if (!data) return;
-        showTip(renderTooltipHTML(data), e.clientX, e.clientY);
+        // Start at the currently-selected machine
+        const selIdx = Math.max(0, data.rows.findIndex(r => r.isSelected));
+        showTip(data, selIdx, e.clientX, e.clientY);
     });
 
     svg.addEventListener('mousemove', (e) => {
@@ -744,15 +839,15 @@ function attachTooltip(container, svg) {
         hideTip();
     });
 
-    // Touch / click: tap a chart edge label → bottom sheet
-    // Also works as a desktop click fallback (hover tooltip is hidden first)
+    // Touch / click: tap a chart edge label → bottom sheet (shows all routes)
     svg.addEventListener('click', (e) => {
         const trigger = e.target.closest('.chart-tip-trigger');
         if (!trigger) return;
         const data = JSON.parse(trigger.dataset.tooltipJson || 'null');
         if (!data) return;
-        tip.style.display = 'none'; // dismiss hover tooltip if open
-        openBottomSheet({ title: data.title || 'Route Comparison', html: renderTooltipHTML(data) });
+        tip.style.display = 'none';
+        tip._data = null;
+        openBottomSheet({ title: data.title || 'Route Comparison', html: renderAllRoutesHTML(data) });
     });
 
     // Hide when the modal closes
@@ -761,6 +856,7 @@ function attachTooltip(container, svg) {
         new MutationObserver(() => {
             if (!modal.classList.contains('open') && modal.style.display === 'none') {
                 tip.style.display = 'none';
+                tip._data = null;
             }
         }).observe(modal, { attributes: true, attributeFilter: ['style', 'class'] });
     }
@@ -770,6 +866,7 @@ function attachTooltip(container, svg) {
 
 // Module-level zoom state so Reset can access it
 const _zoom = { scale: 1, tx: 0, ty: 0 };
+
 
 function applyTransform(viewport) {
     viewport.setAttribute('transform', `translate(${_zoom.tx},${_zoom.ty}) scale(${_zoom.scale})`);
