@@ -1,3 +1,4 @@
+// QMCommandWorkingVersion/js/ui/chart.js
 // ============================================================================
 // PRODUCTION CHAIN CHART — SVG tree visualization
 // ============================================================================
@@ -700,6 +701,7 @@ function renderSVG(container, nodes, edges) {
 function attachNodeDrag(node, edges, nodeById) {
     let isDragging = false;
     let startMouseX, startMouseY, initNodeX, initNodeY;
+    let rafId = null;
 
     node.dom.group.addEventListener('pointerdown', (e) => {
         if (e.button !== undefined && e.button !== 0) return;
@@ -718,21 +720,30 @@ function attachNodeDrag(node, edges, nodeById) {
     node.dom.group.addEventListener('pointermove', (e) => {
         if (!isDragging) return;
 
-        const dragSpeed = 1.6;
+        const dragSpeed = 2.0; 
         const dx = ((e.clientX - startMouseX) / _zoom.scale) * dragSpeed;
         const dy = ((e.clientY - startMouseY) / _zoom.scale) * dragSpeed;
 
-        node.x = initNodeX + dx;
-        node.y = initNodeY + dy;
+        if (!rafId) {
+            rafId = requestAnimationFrame(() => {
+                node.x = initNodeX + dx;
+                node.y = initNodeY + dy;
 
-        node.dom.group.setAttribute('transform', `translate(${node.x},${node.y})`);
-
-        updateEdgesForNode(node.id, edges, nodeById);
+                node.dom.group.setAttribute('transform', `translate(${node.x},${node.y})`);
+                updateEdgesForNode(node.id, edges, nodeById);
+                
+                rafId = null;
+            });
+        }
     });
 
     const endDrag = (e) => {
         if (!isDragging) return;
         isDragging = false;
+        if (rafId) {
+            cancelAnimationFrame(rafId);
+            rafId = null;
+        }
         node.dom.group.style.cursor = 'grab';
         node.dom.group.releasePointerCapture(e.pointerId);
     };
@@ -947,6 +958,8 @@ function attachZoomPan(svg, viewport) {
     _zoom.tx = 0;
     _zoom.ty = 0;
 
+    svg.style.touchAction = 'none';
+
     svg.addEventListener('wheel', (e) => {
         e.preventDefault();
         const rect = svg.getBoundingClientRect();
@@ -954,7 +967,8 @@ function attachZoomPan(svg, viewport) {
         const mouseY = e.clientY - rect.top;
 
         const delta = e.deltaY > 0 ? 0.9 : 1.1;
-        const newScale = Math.min(4, Math.max(0.15, _zoom.scale * delta));
+        // Increased max zoom capability from 4 to 8
+        const newScale = Math.min(8, Math.max(0.15, _zoom.scale * delta));
 
         _zoom.tx = mouseX - (mouseX - _zoom.tx) * (newScale / _zoom.scale);
         _zoom.ty = mouseY - (mouseY - _zoom.ty) * (newScale / _zoom.scale);
@@ -963,12 +977,7 @@ function attachZoomPan(svg, viewport) {
     }, { passive: false });
 
     const activePointers = new Map();
-    let lastPinchDist = 0;
-
-    function pinchDist(map) {
-        const [a, b] = [...map.values()];
-        return Math.hypot(b.x - a.x, b.y - a.y);
-    }
+    let rafId = null;
 
     svg.addEventListener('pointerdown', (e) => {
         if (e.button !== undefined && e.button !== 0) return;
@@ -979,38 +988,87 @@ function attachZoomPan(svg, viewport) {
 
         activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
         svg.setPointerCapture(e.pointerId);
-        if (activePointers.size === 2) lastPinchDist = pinchDist(activePointers);
         e.preventDefault();
     });
 
     svg.addEventListener('pointermove', (e) => {
         if (!activePointers.has(e.pointerId)) return;
+
         const prev = activePointers.get(e.pointerId);
         const curr = { x: e.clientX, y: e.clientY };
-        activePointers.set(e.pointerId, curr);
 
-        if (activePointers.size === 1) {
-            _zoom.tx += curr.x - prev.x;
-            _zoom.ty += curr.y - prev.y;
-            applyTransform(viewport);
-        } else if (activePointers.size >= 2) {
-            const newDist = pinchDist(activePointers);
-            if (lastPinchDist > 0) {
-                const scaleFactor = newDist / lastPinchDist;
-                const pts = [...activePointers.values()];
-                const rect = svg.getBoundingClientRect();
-                const midX = (pts[0].x + pts[1].x) / 2 - rect.left;
-                const midY = (pts[0].y + pts[1].y) / 2 - rect.top;
-                const newScale = Math.min(4, Math.max(0.15, _zoom.scale * scaleFactor));
-                _zoom.tx = midX - (midX - _zoom.tx) * (newScale / _zoom.scale);
-                _zoom.ty = midY - (midY - _zoom.ty) * (newScale / _zoom.scale);
-                _zoom.scale = newScale;
-                applyTransform(viewport);
-            }
-            lastPinchDist = newDist;
+        if (!rafId) {
+            rafId = requestAnimationFrame(() => {
+                
+                if (activePointers.size === 1) {
+                    const panSpeed = 2.0; 
+                    _zoom.tx += (curr.x - prev.x) * panSpeed;
+                    _zoom.ty += (curr.y - prev.y) * panSpeed;
+                    
+                    applyTransform(viewport);
+                    activePointers.set(e.pointerId, curr);
+                    
+                } else if (activePointers.size === 2) {
+                    const pts = Array.from(activePointers.values());
+                    const p1 = pts[0];
+                    const p2 = pts[1];
+                    
+                    const prevDist = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+                    const prevMidX = (p1.x + p2.x) / 2;
+                    const prevMidY = (p1.y + p2.y) / 2;
+
+                    activePointers.set(e.pointerId, curr);
+
+                    const newPts = Array.from(activePointers.values());
+                    const np1 = newPts[0];
+                    const np2 = newPts[1];
+
+                    const newDist = Math.hypot(np2.x - np1.x, np2.y - np1.y);
+                    const newMidX = (np1.x + np2.x) / 2;
+                    const newMidY = (np1.y + np2.y) / 2;
+
+                    const pinchPanSpeed = 1.0;
+                    _zoom.tx += (newMidX - prevMidX) * pinchPanSpeed;
+                    _zoom.ty += (newMidY - prevMidY) * pinchPanSpeed;
+
+                    if (prevDist > 0) {
+                        const rect = svg.getBoundingClientRect();
+                        const midX = newMidX - rect.left;
+                        const midY = newMidY - rect.top;
+
+                        const scaleFactor = newDist / prevDist;
+                        // Increased max zoom capability from 4 to 8
+                        const newScale = Math.min(8, Math.max(0.15, _zoom.scale * scaleFactor));
+
+                        _zoom.tx = midX - (midX - _zoom.tx) * (newScale / _zoom.scale);
+                        _zoom.ty = midY - (midY - _zoom.ty) * (newScale / _zoom.scale);
+                        _zoom.scale = newScale;
+                    }
+
+                    applyTransform(viewport);
+                }
+                
+                rafId = null;
+            });
+        } else {
+            activePointers.set(e.pointerId, curr);
         }
     });
 
-    svg.addEventListener('pointerup', (e) => { activePointers.delete(e.pointerId); lastPinchDist = 0; });
-    svg.addEventListener('pointercancel', (e) => { activePointers.delete(e.pointerId); lastPinchDist = 0; });
+    const endPointer = (e) => {
+        activePointers.delete(e.pointerId);
+        if (rafId) {
+            cancelAnimationFrame(rafId);
+            rafId = null;
+        }
+    };
+
+    svg.addEventListener('pointerup', endPointer);
+    svg.addEventListener('pointercancel', endPointer);
+    
+    svg.addEventListener('pointerout', (e) => {
+        if (!svg.contains(e.relatedTarget)) {
+            endPointer(e);
+        }
+    });
 }

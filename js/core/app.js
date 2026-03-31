@@ -1,3 +1,4 @@
+// QMCommandWorkingVersion/js/core/app.js
 import { state, saveState } from '../state/store.js';
 import { CATEGORIES, getAllItems, RECIPES, EXTRACTION_ROUTES, VENDOR_ITEMS } from '../data/data.js';
 import { i18n } from '../data/lang.js';
@@ -336,7 +337,6 @@ function renderLogistics({ mode, t, targetMetal, mult, showBp, bank, purchased, 
                 let hueVal = Math.max(0, Math.min(120, Math.round((progressPct / 100) * 120)));
                 let dynColor = `hsl(${hueVal}, 85%, 45%)`;
 
-                // Render as static text so it is not clickable in Missing Components
                 const isVendorSourced = VENDOR_ITEMS.has(k) && state.userSourcePrefs && state.userSourcePrefs[k] === 'vendor';
                 const vendorTag = isVendorSourced
                     ? ` <span style="font-size:0.75em; color:var(--accent); font-weight:normal;">[${(t.vendorSource || 'Magic Vendor')}]</span>`
@@ -392,6 +392,9 @@ function renderPipeline({ t, mode, crafters, showBp }) {
     const modPipe = document.getElementById('mod_mfgPipe');
     if (modPipe) modPipe.style.display = '';
 
+    // Strict hardware detection for touch points ensures it NEVER triggers on desktop
+    const isTouch = (('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0));
+
     let outputHTML = state.pipelineStepsRaw.map((stepObj, index) => {
         let isCompleted = state.completedSteps.includes(index);
         let completedClass = isCompleted ? 'completed' : '';
@@ -423,6 +426,13 @@ function renderPipeline({ t, mode, crafters, showBp }) {
         }
 
         let routeHtml = '';
+        let safeStepKey = stepObj.stepKey ? stepObj.stepKey.replace(/'/g, "\\'") : '';
+
+        // Touch-only info button injected inline if the device supports touch
+        let infoBtn = (isTouch && stepObj.routeStats && stepObj.routeStats.length > 1)
+            ? `<span data-action="compareRoutes" data-step="${safeStepKey}" style="margin-left:auto; color:var(--text-dim); cursor:pointer; font-weight:bold; border:1px solid var(--border); border-radius:50%; width:22px; height:22px; display:inline-flex; align-items:center; justify-content:center; font-size:12px; background:var(--bg-card); box-shadow: 0 1px 3px rgba(0,0,0,0.3);" title="Compare Routes">?</span>`
+            : '';
+
         if (stepObj.routeStats && stepObj.routeStats.length > 1) {
             let btns = stepObj.routeStats.map(rs => {
                 let classes = ['btn-route'];
@@ -434,20 +444,17 @@ function renderPipeline({ t, mode, crafters, showBp }) {
                 if (rs.isRegionLocked) { classes.push('rt-reg'); badges.push('<span class="acronym-box acronym-reg">R</span>'); }
 
                 let badgeHtml = badges.length > 0 ? `<span style="margin-left:8px; display:inline-flex; gap:4px;">${badges.join('')}</span>` : '';
-                let safeStepKey = stepObj.stepKey.replace(/'/g, "\\'");
                 let safeRouteName = rs.name.replace(/'/g, "\\'");
 
                 return `<button class="${classes.join(' ')}" data-action="changeRoute" data-step="${safeStepKey}" data-route="${safeRouteName}"><span>${rs.name}</span>${badgeHtml}</button>`;
             }).join('');
-            const safeStepKey = stepObj.stepKey.replace(/'/g, "\\'");
-            const compareBtn = `<button class="btn-mini btn-compare touch-only" data-action="compareRoutes" data-step="${safeStepKey}" title="Compare all routes">\u2696 Compare</button>`;
-            routeHtml = `<div class="route-choices">${btns}${compareBtn}</div>`;
+
+            routeHtml = `<div class="route-choices">${btns}</div>`;
         }
 
         const sep = `<hr style="border:none; border-top: 1px dashed var(--border); margin: 6px 0;">`;
         const hasButtons = sourceHtml !== '' || routeHtml !== '';
 
-        // Build per-step byproducts string
         let byproductsStr = '';
         if (showBp && stepObj.byproducts && stepObj.byproducts.length > 0) {
             byproductsStr = stepObj.byproducts.map(y => {
@@ -462,6 +469,7 @@ function renderPipeline({ t, mode, crafters, showBp }) {
             <div style="display:flex; align-items:baseline; gap:6px; margin-bottom:4px;">
                 <span style="cursor:pointer; font-size:1.1em; flex-shrink:0;">${checkIcon}</span>
                 <span style="color:var(--text-dim); font-size:0.85em; flex-shrink:0;">${t.stepPrefix || 'Step'} ${index + 1}.</span>
+                ${infoBtn}
             </div>
             <div style="padding-left: 26px; margin-bottom:${hasOutputs || hasButtons ? '6px' : '0'};">
                 ${modAction}${perCr}
@@ -532,7 +540,6 @@ export function calculate() {
         return;
     }
 
-    // Enable the max button and hide the empty hint
     if (btnMax) btnMax.disabled = false;
     if (hint) hint.style.display = 'none';
 
@@ -592,7 +599,6 @@ export function navigateByproduct(direction) {
 }
 
 export function processByproduct(k) {
-    // Truncate forward history when navigating to a new item from the middle
     if (byproductHistoryIndex < byproductHistory.length - 1) {
         byproductHistory = byproductHistory.slice(0, byproductHistoryIndex + 1);
     }
