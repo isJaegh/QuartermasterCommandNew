@@ -276,9 +276,12 @@ export function resolveExtractions(deficits, mE, mM, bankData) {
                 let routeStats = availableRoutes.map(rName => {
                     let r = EXTRACTION_ROUTES[source][rName];
                     let req = 0;
+                    let itemsYielded = 0; // Track how many items this route successfully provides
+
                     itemsFromSource.forEach(k => {
                         let y = r.yields[k] || 0;
                         if (y > 0) {
+                            itemsYielded++; // Increment tracking
                             let modifier = mE;
                             if (k === 'bo' && r.action !== 'stepFurnace' && r.action !== 'stepBlastFurnace') modifier = mE * mM;
                             let rReq = Math.ceil(raw[k] / (y * modifier));
@@ -300,16 +303,22 @@ export function resolveExtractions(deficits, mE, mM, bankData) {
 
                     let isRegionLocked = rName.includes('Blast Furnace') || rName.includes('Fabricula') || rName.includes('Greater Natorus') || rName.includes('Natorus') || rName.includes('Grizzly') || rName.includes('Hearth');
 
-                    return { name: rName, req: req, catCost: catCost, totalCost: totalCost, totalByproducts: totalByproducts, isRegionLocked: isRegionLocked };
+                    return { name: rName, req: req, catCost: catCost, totalCost: totalCost, totalByproducts: totalByproducts, isRegionLocked: isRegionLocked, itemsYielded: itemsYielded };
                 });
 
                 let validReqs = routeStats.filter(s => s.req > 0);
                 if (validReqs.length > 0) {
-                    let minTotal = Math.min(...validReqs.map(s => s.totalCost));
+                    // Find the highest number of targets satisfied by any single route
+                    let maxItemsCovered = Math.max(...validReqs.map(s => s.itemsYielded));
+                    
+                    // Only evaluate efficiency among routes that cover the most items
+                    let bestCandidates = validReqs.filter(s => s.itemsYielded === maxItemsCovered);
+                    let minTotal = Math.min(...bestCandidates.map(s => s.totalCost));
                     let maxBp = Math.max(...validReqs.map(s => s.totalByproducts));
 
                     validReqs.forEach(s => {
-                        s.isBestYield = (s.totalCost === minTotal);
+                        // Must tie for max items covered AND have the lowest cost to win
+                        s.isBestYield = (s.itemsYielded === maxItemsCovered && s.totalCost === minTotal);
                         s.isMaxYield = (s.totalByproducts === maxBp && maxBp > 0);
                     });
                 }
